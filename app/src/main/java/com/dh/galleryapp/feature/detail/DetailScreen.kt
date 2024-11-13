@@ -1,6 +1,5 @@
 package com.dh.galleryapp.feature.detail
 
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -28,10 +27,6 @@ fun DetailScreen(
     thumbnailKey: String,
     viewModel: ListViewModel,
 ) {
-    LaunchedEffect(viewModel) {
-        Log.d("dhlog", "DetailScreen viewModel : $viewModel")
-    }
-
     LaunchedEffect(url) {
         viewModel.requestImage(url)
     }

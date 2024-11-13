@@ -48,6 +48,8 @@ class ListViewModel @Inject constructor(
 
     private val journalFileName = "journal.txt"
 
+    private val jobs = HashMap<String, Job?>()
+
     init {
         diskCacheSize = getDiskCacheSize("${context.externalCacheDir?.absolutePath}")
         Log.d("dhlog", "ImageCache init() diskCacheSize $diskCacheSize")
@@ -152,11 +154,11 @@ class ListViewModel @Inject constructor(
         }
     }
 
-    fun requestImageSampling(url: String, width: Int, height: Int, id: String = "-1"): Job {
+    fun requestImageSampling(url: String, width: Int, height: Int, id: String) {
         val originKey = "${URLEncoder.encode(url)}.jpg"
         val key = "${URLEncoder.encode(url)}_${width}_$height.jpg"
 
-        return CoroutineScope(Dispatchers.IO).launch {
+        val job = CoroutineScope(Dispatchers.IO).launch {
             Log.d(
                 "dhlog",
                 "ImageCache requestSampledImage() : id$id $url, size : $width x $height, key : $key"
@@ -236,6 +238,8 @@ class ListViewModel @Inject constructor(
                     }
                 }
             }
+        }.also {
+            jobs[id] = it
         }
     }
 
@@ -510,6 +514,10 @@ class ListViewModel @Inject constructor(
     fun requestImageWithKey(key: String): Bitmap {
         val file = File(context.externalCacheDir?.absolutePath + "/" + key)
         return BitmapUtils.decode(file.absolutePath)!!
+    }
+
+    fun cancelJob(id: String) {
+        jobs[id]?.cancel()
     }
 }
 
