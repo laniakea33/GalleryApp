@@ -1,7 +1,6 @@
 package com.dh.galleryapp.feature.list
 
 import android.graphics.BitmapFactory
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,9 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -34,8 +31,6 @@ import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.dh.galleryapp.R
-import com.dh.galleryapp.core.bitmap.BitmapUtils
 import com.dh.galleryapp.core.model.Image
 import com.dh.galleryapp.core.ui.components.LoadingScreen
 import com.dh.galleryapp.core.ui.components.toPx
@@ -95,7 +90,7 @@ fun ImageList(
     widthDp: Dp,
     heightDp: Dp,
     modifier: Modifier = Modifier,
-    onObserve: (index: Int) -> StateFlow<CacheResult> = { _ -> MutableStateFlow(CacheResult.Waiting) },
+    onObserve: (index: Int) -> StateFlow<CacheState> = { _ -> MutableStateFlow(CacheState.Waiting) },
     onItemClick: (url: String, thumbnailKey: String) -> Unit = { _, _ -> },
     onRequest: (index: Int) -> Unit = {},
     onCancel: (index: Int) -> Unit = {},
@@ -114,7 +109,7 @@ fun ImageList(
                 val image = images[index]!!
 
                 val cachedImage by onObserve(index)
-                    .collectAsState(CacheResult.Waiting)
+                    .collectAsState(CacheState.Waiting)
 
                 ImageListItem(
                     image = image,
@@ -150,7 +145,7 @@ fun ImageListPreview_Waiting() {
         widthDp = 180.dp,
         heightDp = 180.dp,
         onObserve = { index ->
-            MutableStateFlow(CacheResult.Waiting)
+            MutableStateFlow(CacheState.Waiting)
         },
     )
 }
@@ -168,7 +163,7 @@ fun ImageListPreview_Success() {
         widthDp = 180.dp,
         heightDp = 180.dp,
         onObserve = { index ->
-            MutableStateFlow(CacheResult.Success(bitmap!!))
+            MutableStateFlow(CacheState.Success(bitmap!!))
         },
     )
 }
@@ -182,7 +177,7 @@ fun ImageListPreview_Failure() {
         widthDp = 180.dp,
         heightDp = 180.dp,
         onObserve = { index ->
-            MutableStateFlow(CacheResult.Failure(RuntimeException("심각한 오류 발생")))
+            MutableStateFlow(CacheState.Failure(RuntimeException("심각한 오류 발생")))
         },
     )
 }
@@ -206,19 +201,19 @@ private val dummyImages = buildList {
 fun ImageListItem(
     image: Image,
     modifier: Modifier = Modifier,
-    cachedImage: CacheResult,
+    cachedImage: CacheState,
     onRequest: () -> Unit = {},
     onCancel: () -> Unit = {},
 ) {
     DisposableEffect(cachedImage) {
-        val prev: CacheResult = cachedImage
+        val prev: CacheState = cachedImage
 
-        if (cachedImage is CacheResult.Waiting) {
+        if (cachedImage is CacheState.Waiting) {
             onRequest()
         }
 
         onDispose {
-            if (cachedImage is CacheResult.Loading && prev is CacheResult.Loading) {
+            if (cachedImage is CacheState.Loading && prev is CacheState.Loading) {
                 onCancel()
             }
         }
@@ -229,28 +224,28 @@ fun ImageListItem(
 
 @Composable
 private fun ImageListItemContent(
-    cachedImage: CacheResult,
+    cachedImage: CacheState,
     modifier: Modifier
 ) {
     when (cachedImage) {
-        CacheResult.Loading, CacheResult.Waiting -> {
+        CacheState.Loading, CacheState.Waiting -> {
             LoadingScreen(
                 modifier = modifier,
             )
         }
 
-        is CacheResult.Success -> {
+        is CacheState.Success -> {
             Image(
-                bitmap = (cachedImage as CacheResult.Success).data.asImageBitmap(),
+                bitmap = (cachedImage as CacheState.Success).data.asImageBitmap(),
                 contentDescription = null,
                 modifier = modifier,
                 contentScale = ContentScale.Crop
             )
         }
 
-        is CacheResult.Failure -> {
+        is CacheState.Failure -> {
             Text(
-                text = (cachedImage as CacheResult.Failure).t.message ?: "오류 발생",
+                text = (cachedImage as CacheState.Failure).t.message ?: "오류 발생",
                 style = MaterialTheme.typography
                     .headlineMedium,
                 modifier = modifier
