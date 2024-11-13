@@ -3,6 +3,8 @@ package com.dh.galleryapp.feature.list
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
@@ -242,6 +244,7 @@ class ListViewModel @Inject constructor(
     }
 }
 
+@Immutable
 sealed class CacheState {
     data class Success(val data: Bitmap) : CacheState()
     data class Failure(val t: Throwable) : CacheState()

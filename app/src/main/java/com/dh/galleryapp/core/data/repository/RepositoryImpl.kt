@@ -45,6 +45,7 @@ class RepositoryImpl @Inject constructor(
     }
 
     override suspend fun downloadImage(url: String, filePath: String): Result<String> {
+        Log.d("dhlog", "RepositoryImpl downloadImage() : $url")
         return try {
             val responseBody = networkDataSource.downloadImage(url)
 

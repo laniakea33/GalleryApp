@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -31,54 +32,53 @@ import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
+import com.dh.galleryapp.core.KeyGenerator
 import com.dh.galleryapp.core.model.Image
 import com.dh.galleryapp.core.ui.components.LoadingScreen
 import com.dh.galleryapp.core.ui.components.toPx
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import java.net.URLEncoder
 
 @Composable
 fun ListScreen(
     viewModel: ListViewModel,
-    onItemClick: (url: String, thumbnailKey: String) -> Unit,
     modifier: Modifier = Modifier,
+    onItemClick: (url: String, thumbnailKey: String) -> Unit,
 ) {
     val images = viewModel.images.collectAsLazyPagingItems()
 
-    if (images.loadState.refresh == LoadState.Loading) {
+    val isLoading by remember {
+        derivedStateOf {
+            images.loadState.refresh == LoadState.Loading
+        }
+    }
+
+    if (isLoading) {
         LoadingScreen()
 
     } else {
         val configuration = LocalConfiguration.current
-        val itemWidth = configuration.screenWidthDp.dp / 2
-
-        val widthDp = itemWidth
-        val heightDp = itemWidth
-        val width = widthDp.toPx().toInt()
-        val height = heightDp.toPx().toInt()
+        val itemSize = configuration.screenWidthDp.dp / 2
+        val width = itemSize.toPx().toInt()
+        val height = itemSize.toPx().toInt()
 
         ImageList(
             images = images,
-            widthDp = widthDp,
-            heightDp = heightDp,
-            onItemClick = onItemClick,
+            itemSize = itemSize,
             modifier = modifier,
-            onRequest = { index ->
-                val image = images[index]!!
+            onItemClick = onItemClick,
+            onRequest = {
                 viewModel.requestImageSampling(
-                    image.downloadUrl,
+                    it.downloadUrl,
                     width, height,
-                    id = image.id,
+                    id = it.id,
                 )
             },
-            onCancel = { index ->
-                val image = images[index]!!
-                viewModel.cancelJob(image.id)
+            onCancel = {
+                viewModel.cancelJob(it.id)
             },
-            onObserve = { index ->
-                val image = images[index]!!
-                viewModel.observe(image.downloadUrl, width, height)
+            onObserve = {
+                viewModel.observe(it.downloadUrl, width, height)
             }
         )
     }
@@ -87,18 +87,17 @@ fun ListScreen(
 @Composable
 fun ImageList(
     images: LazyPagingItems<Image>,
-    widthDp: Dp,
-    heightDp: Dp,
+    itemSize: Dp,
     modifier: Modifier = Modifier,
-    onObserve: (index: Int) -> StateFlow<CacheState> = { _ -> MutableStateFlow(CacheState.Waiting) },
     onItemClick: (url: String, thumbnailKey: String) -> Unit = { _, _ -> },
-    onRequest: (index: Int) -> Unit = {},
-    onCancel: (index: Int) -> Unit = {},
+    onObserve: (image: Image) -> StateFlow<CacheState> = { _ -> MutableStateFlow(CacheState.Waiting) },
+    onRequest: (image: Image) -> Unit = {},
+    onCancel: (image: Image) -> Unit = {},
 ) {
-    val width = widthDp.toPx().toInt()
-    val height = heightDp.toPx().toInt()
-
     Box(modifier = modifier) {
+        val width = itemSize.toPx().toInt()
+        val height = itemSize.toPx().toInt()
+
         LazyVerticalGrid(
             modifier = Modifier.fillMaxSize(),
             columns = GridCells.Fixed(2),
@@ -108,28 +107,25 @@ fun ImageList(
             ) { index ->
                 val image = images[index]!!
 
-                val cachedImage by onObserve(index)
+                val cachedImage by onObserve(image)
                     .collectAsState(CacheState.Waiting)
 
                 ImageListItem(
-                    image = image,
-                    modifier = Modifier
-                        .height(heightDp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {
-                                onItemClick(
-                                    images[index]!!.downloadUrl,
-                                    "${URLEncoder.encode(image.downloadUrl)}_${width}_$height.jpg"
-                                )
-                            }
-                        ),
                     cachedImage = cachedImage,
-                    onRequest = {
-                        onRequest(index)
-                    },
-                    onCancel = { onCancel(index) }
+                    modifier = Modifier
+                        .height(itemSize),
+                    onRequest = { onRequest(image) },
+                    onCancel = { onCancel(image) },
+                    onClick = {
+                        onItemClick(
+                            image.downloadUrl,
+                            KeyGenerator.key(
+                                url = image.downloadUrl,
+                                width = width,
+                                height = height,
+                            ),
+                        )
+                    }
                 )
             }
         }
@@ -140,10 +136,9 @@ fun ImageList(
 @Preview(showBackground = true, backgroundColor = 0xFFFFFFFF, widthDp = 360, heightDp = 640)
 fun ImageListPreview_Waiting() {
     ImageList(
-        modifier = Modifier,
         images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
-        widthDp = 180.dp,
-        heightDp = 180.dp,
+        itemSize = 180.dp,
+        modifier = Modifier,
         onObserve = { index ->
             MutableStateFlow(CacheState.Waiting)
         },
@@ -158,10 +153,9 @@ fun ImageListPreview_Success() {
     val bitmap = BitmapFactory.decodeResource(context.resources, android.R.drawable.ic_dialog_map)
 
     ImageList(
-        modifier = Modifier,
         images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
-        widthDp = 180.dp,
-        heightDp = 180.dp,
+        itemSize = 180.dp,
+        modifier = Modifier,
         onObserve = { index ->
             MutableStateFlow(CacheState.Success(bitmap!!))
         },
@@ -172,10 +166,9 @@ fun ImageListPreview_Success() {
 @Preview(showBackground = true, backgroundColor = 0xFFFFFFFF, widthDp = 360, heightDp = 640)
 fun ImageListPreview_Failure() {
     ImageList(
-        modifier = Modifier,
         images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
-        widthDp = 180.dp,
-        heightDp = 180.dp,
+        itemSize = 180.dp,
+        modifier = Modifier,
         onObserve = { index ->
             MutableStateFlow(CacheState.Failure(RuntimeException("심각한 오류 발생")))
         },
@@ -199,11 +192,11 @@ private val dummyImages = buildList {
 
 @Composable
 fun ImageListItem(
-    image: Image,
-    modifier: Modifier = Modifier,
     cachedImage: CacheState,
+    modifier: Modifier = Modifier,
     onRequest: () -> Unit = {},
     onCancel: () -> Unit = {},
+    onClick: () -> Unit,
 ) {
     DisposableEffect(cachedImage) {
         val prev: CacheState = cachedImage
@@ -219,13 +212,18 @@ fun ImageListItem(
         }
     }
 
-    ImageListItemContent(cachedImage, modifier)
+    ImageListItemContent(
+        cachedImage = cachedImage,
+        modifier = modifier,
+        onClick = onClick,
+    )
 }
 
 @Composable
 private fun ImageListItemContent(
     cachedImage: CacheState,
-    modifier: Modifier
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit = {},
 ) {
     when (cachedImage) {
         CacheState.Loading, CacheState.Waiting -> {
@@ -238,7 +236,11 @@ private fun ImageListItemContent(
             Image(
                 bitmap = (cachedImage as CacheState.Success).data.asImageBitmap(),
                 contentDescription = null,
-                modifier = modifier,
+                modifier = modifier.clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClick,
+                ),
                 contentScale = ContentScale.Crop
             )
         }
