@@ -15,6 +15,7 @@ import com.dh.galleryapp.core.storage.StorageDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.io.File
+import java.io.FileOutputStream
 import javax.inject.Inject
 
 class RepositoryImpl @Inject constructor(
@@ -43,7 +44,7 @@ class RepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun downloadImage(url: String, filePath: String): Result<File> {
+    override suspend fun downloadImage(url: String, filePath: String): Result<String> {
         return try {
             val responseBody = networkDataSource.downloadImage(url)
 
@@ -54,9 +55,57 @@ class RepositoryImpl @Inject constructor(
                 }
             }
 
-            Result.success(file)
+            Result.success(filePath)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    override fun createFile(filePath: String): File {
+        return storageDataSource.createFile(filePath)
+    }
+
+    override fun readLines(filePath: String): List<String> {
+        return storageDataSource.readLines(filePath)
+    }
+
+    override fun fileNames(dirPath: String): List<String> {
+        return storageDataSource.fileNames(dirPath)
+    }
+
+    override fun deleteFile(filePath: String): Boolean {
+        return storageDataSource.deleteFile(filePath)
+    }
+
+    override fun deleteFiles(filePathList: List<String>) {
+        return storageDataSource.deleteFiles(filePathList)
+    }
+
+    override fun prependStringToFile(filePath: String, s: String) {
+        return storageDataSource.prependStringToFile(filePath, s)
+    }
+
+    override fun removeStringFromFile(filePath: String, s: String) {
+        return storageDataSource.removeStringFromFile(filePath, s)
+    }
+
+    override fun fileExists(filePath: String): Boolean {
+        return storageDataSource.fileExists(filePath)
+    }
+
+    override fun fileLength(filePath: String): Long {
+        return storageDataSource.fileLength(filePath)
+    }
+
+    override fun fileSizeSum(dirPath: String): Long {
+        return storageDataSource.fileSizeSum(dirPath)
+    }
+
+    override fun writeFileOutputStreamToFile(
+        dirPath: String,
+        fileName: String,
+        onFileOutputStream: (FileOutputStream) -> Unit
+    ) {
+        return storageDataSource.writeFileOutputStreamToFile(dirPath, fileName, onFileOutputStream)
     }
 }

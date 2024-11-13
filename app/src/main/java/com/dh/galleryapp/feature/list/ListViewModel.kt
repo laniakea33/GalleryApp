@@ -6,6 +6,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
+import com.dh.galleryapp.core.KeyGenerator
 import com.dh.galleryapp.core.bitmap.BitmapUtils
 import com.dh.galleryapp.core.data.di.OnlineRepository
 import com.dh.galleryapp.core.data.repository.Repository
@@ -19,7 +20,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.yield
 import java.io.File
-import java.net.URLEncoder
 import java.util.LinkedList
 import javax.inject.Inject
 
@@ -29,75 +29,64 @@ class ListViewModel @Inject constructor(
     @ApplicationContext val context: Context,
 ) : ViewModel() {
 
+    //  이미지 데이터 목록
     val images = repository.loadImageList()
         .cachedIn(viewModelScope)
 
-    /*
-    dir : context.externalCacheDir?.absolutePath
-    fileName : [url.encode]_width_height.jpg
-     */
+    //  요청들을 관리하기 위한 collection
+    private val jobs = HashMap<String, Job?>()
 
     private val memoryCache = HashMap<String, MutableStateFlow<CacheResult>>()
     private val memoryCacheKeyList = LinkedList<String>()
     private var memoryCacheSize: Long = 0
     private val memoryCacheSizeMax: Long = 1024 * 1024 * 20 // 20mb
 
+    private val diskCacheDir = context.externalCacheDir!!.absolutePath
     private val diskCacheKeyList = LinkedList<String>()
     private var diskCacheSize: Long = 0
     private val diskCacheSizeBytesMax: Long = 1024 * 1024 * 100 // 100 MB
 
+    private val journalFileDir = context.filesDir
     private val journalFileName = "journal.txt"
-
-    private val jobs = HashMap<String, Job?>()
+    private val journalFilePath = "$journalFileDir/$journalFileName"
 
     init {
-        diskCacheSize = getDiskCacheSize("${context.externalCacheDir?.absolutePath}")
-        Log.d("dhlog", "ImageCache init() diskCacheSize $diskCacheSize")
+        diskCacheSize = getDiskCacheSize(diskCacheDir)
+        Log.d("dhlog", "ListViewModel init() diskCacheSize $diskCacheSize")
         loadJournalFile(diskCacheKeyList)
     }
 
     private fun loadJournalFile(into: MutableList<String>) {
-        val journalFile = File("${context.filesDir}/$journalFileName")
-        if (!journalFile.exists()) {
-            journalFile.createNewFile()
-        } else {
-            into.addAll(journalFile.readLines())
-        }
+        into.addAll(repository.readLines(journalFilePath))
 
-        Log.d("dhlog", "ImageCache loadJournalFile() ${into.size}")
+        Log.d("dhlog", "ListViewModel loadJournalFile() ${into.size}")
 
-        val files = File("${context.externalCacheDir?.absolutePath}")
-            .listFiles()
-            ?.filter { it.isFile }
-
-        if (files == null) return
+        val fileNames = repository.fileNames(diskCacheDir)
 
         val fakeKey = into.filter { key ->
-            files.none { file ->
-                key == file.name
+            fileNames.none { name ->
+                key == name
             }
         }
 
         into.removeAll(fakeKey.toSet())
 
-        val fakeFiles = files.filter { file ->
+        val fakeFileNames = fileNames.filter { fileName ->
             into.none { key ->
-                key == file.name
+                key == fileName
             }
         }
 
-        fakeFiles.forEach {
-            it.delete()
-        }
+        repository.deleteFiles(fakeFileNames)
 
         Log.d(
             "dhlog",
-            "ImageCache loadJournalFile() fakeKey : ${fakeKey.size}, fakeFiles : ${fakeFiles.size}"
+            "ListViewModel loadJournalFile() fakeKey : ${fakeKey.size}, fakeFiles : ${fakeFileNames.size}"
         )
     }
 
     fun requestImage(url: String): Job {
-        val key = "${URLEncoder.encode(url)}.jpg"
+        val key = KeyGenerator.key(url)
 
         return CoroutineScope(Dispatchers.IO).launch {
             if (isLoading(key)) return@launch
@@ -115,11 +104,11 @@ class ListViewModel @Inject constructor(
                     }
                 }) return@launch
 
-            val filePath = "${context.externalCacheDir?.absolutePath}/$key"
+            val filePath = "$diskCacheDir/$key"
 
             yield()
 
-            if (isCachedInDisk(filePath)) {
+            if (isCachedInDisk(key)) {
                 yield()
 
                 onImageDownloaded(filePath, key, false)
@@ -129,8 +118,7 @@ class ListViewModel @Inject constructor(
 
                 if (result.isSuccess) {
                     try {
-                        val file = result.getOrThrow()
-                        val fileSize = file.length()
+                        val fileSize = repository.fileLength(filePath)
 
                         diskLruCacheProcess(key, true, fileSize)
 
@@ -155,13 +143,13 @@ class ListViewModel @Inject constructor(
     }
 
     fun requestImageSampling(url: String, width: Int, height: Int, id: String) {
-        val originKey = "${URLEncoder.encode(url)}.jpg"
-        val key = "${URLEncoder.encode(url)}_${width}_$height.jpg"
+        val originKey = KeyGenerator.key(url)
+        val key = KeyGenerator.key(url, width, height)
 
-        val job = CoroutineScope(Dispatchers.IO).launch {
+        CoroutineScope(Dispatchers.IO).launch {
             Log.d(
                 "dhlog",
-                "ImageCache requestSampledImage() : id$id $url, size : $width x $height, key : $key"
+                "ListViewModel requestSampledImage() : id$id $url, size : $width x $height, key : $key"
             )
 
             if (isLoading(key)) return@launch
@@ -179,31 +167,31 @@ class ListViewModel @Inject constructor(
                     }
                 }) return@launch
 
-            Log.d("dhlog", "ImageCache requestSampledImage() : id$id point 2")
+            Log.d("dhlog", "ListViewModel requestSampledImage() : id$id point 2")
 
-            val orgFilePath = "${context.externalCacheDir?.absolutePath}/$originKey"
-            val filePath = "${context.externalCacheDir?.absolutePath}/$key"
+            val orgFilePath = "$diskCacheDir/$originKey"
+            val filePath = "$diskCacheDir/$key"
 
             yield()
 
-            Log.d("dhlog", "ImageCache requestSampledImage() : id$id point 3")
+            Log.d("dhlog", "ListViewModel requestSampledImage() : id$id point 3")
 
-            if (isCachedInDisk(filePath)) {
+            if (isCachedInDisk(key)) {
                 yield()
 
-                Log.d("dhlog", "ImageCache requestSampledImage() : id$id point 4")
+                Log.d("dhlog", "ListViewModel requestSampledImage() : id$id point 4")
 
                 val bitmap = BitmapUtils.decode(filePath)!!
                 memoryCache[key]?.emit(CacheResult.Success(bitmap))
                 Log.d(
                     "dhlog",
-                    "ImageCache requestSampledImage() 디스크 캐시 있는 케이스, uiState 업데이트 함. key : $key"
+                    "ListViewModel requestSampledImage() 디스크 캐시 있는 케이스, uiState 업데이트 함. key : $key"
                 )
                 memoryLruCacheProcess(key, true, bitmap.allocationByteCount.toLong())
                 diskLruCacheProcess(key, false)
 
-            } else if (isCachedInDisk(orgFilePath)) {
-                Log.d("dhlog", "ImageCache requestSampledImage() 원본파일만 있는 케이스 : $filePath")
+            } else if (isCachedInDisk(originKey)) {
+                Log.d("dhlog", "ListViewModel requestSampledImage() 원본파일만 있는 케이스 : $filePath")
                 onImageDownloaded(orgFilePath, key, false, width, height)
 
             } else {
@@ -211,17 +199,17 @@ class ListViewModel @Inject constructor(
 
                 if (result.isSuccess) {
                     try {
-                        val orgFile = result.getOrThrow()
-                        val fileSize = orgFile.length()
+                        val orgFileName = result.getOrThrow()
+                        val fileSize = repository.fileLength(orgFileName)
                         Log.d(
                             "dhlog",
-                            "ImageCache diskCacheSize size added $fileSize, total : $diskCacheSize"
+                            "ListViewModel diskCacheSize size added $fileSize, total : $diskCacheSize"
                         )
                         diskLruCacheProcess(originKey, true, fileSize)
 
                         yield()
 
-                        Log.d("dhlog", "ImageCache requestSampledImage() : id$id point 4.5")
+                        Log.d("dhlog", "ListViewModel requestSampledImage() : id$id point 4.5")
 
                         onImageDownloaded(orgFilePath, key, true, width, height)
 
@@ -249,14 +237,14 @@ class ListViewModel @Inject constructor(
 
     private fun isCachedInMemory(key: String): Boolean {
         return (memoryCache[key] != null && memoryCache[key]!!.value is CacheResult.Success).also {
-            if (it) Log.d("dhlog", "ImageCache isCachedInMemory() : $key")
+            if (it) Log.d("dhlog", "ListViewModel isCachedInMemory() : $key")
         }
     }
 
-    private fun isCachedInDisk(filePath: String): Boolean {
-        val cacheFile = File(filePath)
-        return cacheFile.exists().also {
-            if (it) Log.d("dhlog", "ImageCache isCachedInDisk() : ${cacheFile.name}")
+    private fun isCachedInDisk(key: String): Boolean {
+        val filePath = "$diskCacheDir/$key"
+        return repository.fileExists(filePath).also {
+            if (it) Log.d("dhlog", "ListViewModel isCachedInDisk() : $key")
         }
     }
 
@@ -282,28 +270,37 @@ class ListViewModel @Inject constructor(
         yield()
 
         if (sampling) {
-            BitmapUtils.saveBitmapToFile(
-                bitmap,
-                context.externalCacheDir!!.absolutePath,
-                key
-            )
+            saveBitmapToDiskCache(key, bitmap)
         }
 
         if (isNewData) {
-            val filePath = "${context.externalCacheDir?.absolutePath}/$key"
+            val filePath = "$diskCacheDir/$key"
             val sampledFileSize = File(filePath).length()
 
-            diskLruCacheProcess(key, isNewData, sampledFileSize)
+            diskLruCacheProcess(key, true, sampledFileSize)
         } else {
-            diskLruCacheProcess(key, isNewData)
+            diskLruCacheProcess(key, false)
         }
+    }
+
+    private fun saveBitmapToDiskCache(fileName: String, bitmap: Bitmap) {
+        repository.writeFileOutputStreamToFile(
+            diskCacheDir,
+            fileName,
+            onFileOutputStream = {
+                // Bitmap을 압축하여 파일에 저장 (JPEG 포맷, 압축 품질 100)
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
+            }
+        )
     }
 
     fun observe(downloadUrl: String, width: Int = -1, height: Int = -1): StateFlow<CacheResult> {
         val key =
-            if (width > 0 && height > 0) "${URLEncoder.encode(downloadUrl)}_${width}_$height.jpg" else "${
-                URLEncoder.encode(downloadUrl)
-            }.jpg"
+            if (width > 0 && height > 0) KeyGenerator.key(
+                downloadUrl,
+                width,
+                height
+            ) else KeyGenerator.key(downloadUrl)
 
         var flow = memoryCache[key]
         if (flow == null) {
@@ -314,56 +311,13 @@ class ListViewModel @Inject constructor(
         return flow!!
     }
 
-    fun observeOriginal(downloadUrl: String): StateFlow<CacheResult> {
-        val fileName = "${URLEncoder.encode(downloadUrl)}.jpg"
-        var flow = memoryCache[fileName]
-
-        if (flow == null) {
-            Log.d("dhlog", "ImageCache observe() : null")
-
-            memoryCache[fileName] = MutableStateFlow(CacheResult.Waiting)
-            flow = memoryCache[fileName]
-        } else {
-            when (flow.value) {
-                is CacheResult.Failure -> {
-                    Log.d("dhlog", "ImageCache observe() : failure")
-                }
-
-                CacheResult.Loading -> {
-                    Log.d("dhlog", "ImageCache observe() : loading")
-                }
-
-                is CacheResult.Success -> {
-                    Log.d(
-                        "dhlog",
-                        "ImageCache observe() : success, isRecycled :${(flow.value as CacheResult.Success).data.isRecycled}"
-                    )
-                }
-
-                CacheResult.Waiting -> {
-                    Log.d("dhlog", "ImageCache observe() : waiting")
-                }
-            }
-
-        }
-
-        return flow!!
-    }
-
     private fun getDiskCacheSize(dirPath: String): Long {
-        var sizeSum = 0L
-        File(dirPath)
-            .listFiles()
-            ?.filter { it.isFile }
-            ?.let { list ->
-                list.forEach { sizeSum += it.length() }
-            }
-        return sizeSum
+        return repository.fileSizeSum(dirPath)
     }
 
     @Synchronized
     private fun memoryLruCacheProcess(key: String, isNewData: Boolean, addedSize: Long = 0) {
-        Log.d("dhlog", "ImageCache memoryLruCacheProcess() : $key")
+        Log.d("dhlog", "ListViewModel memoryLruCacheProcess() : $key")
 
         if (isNewData) {
             memoryCacheSize += addedSize
@@ -384,7 +338,7 @@ class ListViewModel @Inject constructor(
 
         Log.d(
             "dhlog",
-            "ImageCache loadFromDiskToMemoryCache memoryCacheSize size added $addedSize, total : $memoryCacheSize"
+            "ListViewModel loadFromDiskToMemoryCache memoryCacheSize size added $addedSize, total : $memoryCacheSize"
         )
     }
 
@@ -400,7 +354,7 @@ class ListViewModel @Inject constructor(
 
             Log.d(
                 "dhlog",
-                "ImageCache removeLastMemoryCache() memoryCacheSize size removed : ${memoryCache[targetKey]}"
+                "ListViewModel removeLastMemoryCache() memoryCacheSize size removed : ${memoryCache[targetKey]}"
             )
         }
 
@@ -409,41 +363,12 @@ class ListViewModel @Inject constructor(
 
     @Synchronized
     private fun diskLruCacheProcess(key: String, isNewData: Boolean, addedSize: Long = 0) {
-        Log.d("dhlog", "ImageCache diskLruCacheProcess() : $key")
+        Log.d("dhlog", "ListViewModel diskLruCacheProcess() : $key")
         if (isNewData) {
             diskCacheSize += addedSize
 
             while (diskCacheSize >= diskCacheSizeBytesMax) {
-                val targetKey = diskCacheKeyList.lastOrNull() ?: continue
-                val targetFile = File("${context.externalCacheDir?.absolutePath}/$targetKey")
-
-                Log.d(
-                    "dhlog",
-                    "ImageCache diskLruCacheProcess() 와일문도는중 : $targetKey, targetSize : $addedSize"
-                )
-
-                if (targetFile.exists()) {
-                    val targetSize = targetFile.length()
-                    targetFile.delete()
-                    diskCacheSize -= targetSize
-                    Log.d("dhlog", "ImageCache diskLruCacheProcess() 와일문도는중 : 실제로 파일이 삭제됨")
-                }
-
-                Log.d(
-                    "dhlog",
-                    "ImageCache diskLruCacheProcess() 와일문도는중 : $targetKey, diskCacheSize : $diskCacheSize > $diskCacheSizeBytesMax"
-                )
-
-                diskCacheKeyList.remove(targetKey)
-
-                Log.d(
-                    "dhlog",
-                    "ImageCache diskLruCacheProcess() 와일문도는중 : 파일 삭제 됨 keySize :${diskCacheKeyList.size}, file size : ${
-                        File("${context.externalCacheDir?.absolutePath}").listFiles()?.size
-                    }"
-                )
-
-                removeStringFromFile("${context.filesDir}/$journalFileName", targetKey)
+                removeLastDiskCache(addedSize)
             }
         }
 
@@ -451,69 +376,52 @@ class ListViewModel @Inject constructor(
             diskCacheKeyList.remove(key)
         }
 
-        removeStringFromFile("${context.filesDir}/$journalFileName", key)
+        repository.removeStringFromFile(journalFilePath, key)
 
         diskCacheKeyList.add(0, key)
-        addStringToFile("${context.filesDir}/$journalFileName", key)
+        repository.prependStringToFile(journalFilePath, key)
 
         Log.d(
             "dhlog",
-            "ImageCache diskLruCacheProcess() : $key diskCacheKeyList : ${diskCacheKeyList.size} fin"
+            "ListViewModel diskLruCacheProcess() : $key diskCacheKeyList : ${diskCacheKeyList.size} fin"
         )
     }
 
-    @Synchronized
-    private fun removeStringFromFile(journalFilePath: String, targetString: String) {
-        val file = File(journalFilePath)
-        val lines = file.readLines()    //  개행문자를 제외하고 List<String>을 반환
+    private fun removeLastDiskCache(addedSize: Long) {
+        val targetKey = diskCacheKeyList.lastOrNull() ?: return
+        val targetFileName = "$diskCacheDir/$targetKey"
 
-        val modifiedLine = lines.mapIndexed { index, st ->
-            if (st.contains(targetString)) {
-                st.replace(targetString, "")
-            } else st
+        Log.d(
+            "dhlog",
+            "ListViewModel diskLruCacheProcess() 와일문도는중 : $targetKey, targetSize : $addedSize"
+        )
+
+        if (repository.fileExists(targetFileName)) {
+            val targetSize = repository.fileLength(targetFileName)
+            repository.deleteFile(targetFileName)
+            diskCacheSize -= targetSize
+            Log.d("dhlog", "ListViewModel diskLruCacheProcess() 와일문도는중 : 실제로 파일이 삭제됨")
         }
 
-        val bufferedWrite = file.bufferedWriter()
-        modifiedLine.forEachIndexed { index, st ->
-            if (st.isNotBlank()) {
-                if (index < modifiedLine.size - 1) {
-                    bufferedWrite.write(st + "\n")
-                } else {
-                    bufferedWrite.write(st)
-                }
-            }
-        }
-        bufferedWrite.flush()
-        bufferedWrite.close()
-    }
+        Log.d(
+            "dhlog",
+            "ListViewModel diskLruCacheProcess() 와일문도는중 : $targetKey, diskCacheSize : $diskCacheSize > $diskCacheSizeBytesMax"
+        )
 
-    @Synchronized
-    private fun addStringToFile(journalFilePath: String, targetString: String) {
-        Log.d("dhlog", "addStringToFile << $targetString at ${Thread.currentThread().name}")
-        val file = File(journalFilePath)
-        val lines = file.readLines()
-        val bufferedWrite = file.bufferedWriter()
+        diskCacheKeyList.remove(targetKey)
 
-        if (lines.isNotEmpty()) {
-            bufferedWrite.write(targetString + "\n")
-            lines.forEachIndexed { i, item ->
-                if (i < lines.size - 1) {
-                    bufferedWrite.write(item + "\n")
-                } else {
-                    bufferedWrite.write(item)
-                }
-            }
-        } else {
-            bufferedWrite.write(targetString)
-        }
+        Log.d(
+            "dhlog",
+            "ListViewModel diskLruCacheProcess() 와일문도는중 : 파일 삭제 됨 keySize :${diskCacheKeyList.size}, file size : ${
+                File(diskCacheDir).listFiles()?.size
+            }"
+        )
 
-        bufferedWrite.flush()
-        bufferedWrite.close()
+        repository.removeStringFromFile(journalFilePath, targetKey)
     }
 
     fun requestImageWithKey(key: String): Bitmap {
-        val file = File(context.externalCacheDir?.absolutePath + "/" + key)
-        return BitmapUtils.decode(file.absolutePath)!!
+        return BitmapUtils.decode("$diskCacheDir/$key")!!
     }
 
     fun cancelJob(id: String) {
