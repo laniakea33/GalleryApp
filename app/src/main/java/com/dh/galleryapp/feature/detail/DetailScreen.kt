@@ -1,5 +1,6 @@
 package com.dh.galleryapp.feature.detail
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -16,20 +17,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import com.dh.galleryapp.core.imagecache.CacheResult
-import com.dh.galleryapp.core.imagecache.ImageCache
 import com.dh.galleryapp.core.ui.components.ZoomableImage
-import com.dh.galleryapp.core.ui.components.rememberImageCache
+import com.dh.galleryapp.feature.list.CacheResult
+import com.dh.galleryapp.feature.list.ListViewModel
 
 @Composable
 fun DetailScreen(
     modifier: Modifier = Modifier,
     url: String,
     thumbnailKey: String,
-    imageCache: ImageCache = rememberImageCache(),
+    viewModel: ListViewModel,
 ) {
+    LaunchedEffect(viewModel) {
+        Log.d("dhlog", "DetailScreen viewModel : $viewModel")
+    }
+
     LaunchedEffect(url) {
-        imageCache.requestImage(url)
+        viewModel.requestImage(url)
     }
 
     Box(
@@ -37,13 +41,13 @@ fun DetailScreen(
             .background(color = Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        val cachedImage by imageCache.observe(url)
+        val cachedImage by viewModel.observe(url)
             .collectAsState(CacheResult.Loading)
 
         when (cachedImage) {
             CacheResult.Loading, CacheResult.Waiting -> {
                 Image(
-                    bitmap = imageCache.requestImageWithKey(thumbnailKey).asImageBitmap(),
+                    bitmap = viewModel.requestImageWithKey(thumbnailKey).asImageBitmap(),
                     contentDescription = null,
                     modifier = modifier,
                     contentScale = ContentScale.Fit
@@ -53,7 +57,6 @@ fun DetailScreen(
             is CacheResult.Success -> {
                 ZoomableImage(
                     bitmap = (cachedImage as CacheResult.Success).data.asImageBitmap(),
-                    modifier = modifier,
                 )
             }
 

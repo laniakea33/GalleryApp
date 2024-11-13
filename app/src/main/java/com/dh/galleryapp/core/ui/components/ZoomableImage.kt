@@ -18,7 +18,6 @@ import androidx.compose.ui.layout.ContentScale
 @Composable
 fun ZoomableImage(
     bitmap: ImageBitmap,
-    modifier: Modifier = Modifier
 ) {
     var zoom by remember { mutableFloatStateOf(1f) }
     var offsetX by remember { mutableFloatStateOf(0f) }
