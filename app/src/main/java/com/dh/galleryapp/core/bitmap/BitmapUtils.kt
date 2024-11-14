@@ -20,7 +20,7 @@ object BitmapUtils {
 
             val bitmap = BitmapFactory.decodeFile(filePath, this)
 
-            Log.d("dhlog", "decodeSample 샘플링 전 << $outWidth x $outHeight")
+            Log.d("dhlog", "decodeSample 샘플링 후 << $outWidth x $outHeight")
 
             return@run bitmap
         }

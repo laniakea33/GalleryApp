@@ -112,7 +112,7 @@ class ListViewModel @Inject constructor(
         CoroutineScope(Dispatchers.IO).launch {
             Log.d(
                 "dhlog",
-                "ListViewModel requestImageSampling : $id : ${imageStateMap[key]?.value}"
+                "ListViewModel requestImageSampling : id$id : ${imageStateMap[key]?.value}"
             )
             if (isLoading(key)) return@launch
 

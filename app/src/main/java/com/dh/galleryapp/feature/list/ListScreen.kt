@@ -1,6 +1,7 @@
 package com.dh.galleryapp.feature.list
 
 import android.graphics.BitmapFactory
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,15 +11,22 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
@@ -40,6 +48,8 @@ import com.dh.galleryapp.core.ui.components.toPx
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
+private const val columnCount = 2
+
 @Composable
 fun ListScreen(
     modifier: Modifier = Modifier,
@@ -59,11 +69,11 @@ fun ListScreen(
 
     } else {
         val configuration = LocalConfiguration.current
-        val itemSize = configuration.screenWidthDp.dp / 2
+        val itemSize = configuration.screenWidthDp.dp / columnCount
         val width = itemSize.toPx().toInt()
         val height = itemSize.toPx().toInt()
 
-        ImageList(
+        PreloadImageList(
             images = images,
             itemSize = itemSize,
             modifier = modifier,
@@ -86,7 +96,7 @@ fun ListScreen(
 }
 
 @Composable
-fun ImageList(
+fun PreloadImageList(
     images: LazyPagingItems<Image>,
     itemSize: Dp,
     modifier: Modifier = Modifier,
@@ -96,39 +106,144 @@ fun ImageList(
     onCancel: (image: Image) -> Unit = {},
 ) {
     Box(modifier = modifier) {
-        val width = itemSize.toPx().toInt()
-        val height = itemSize.toPx().toInt()
+        val lazyGridState = rememberLazyGridState()
 
-        LazyVerticalGrid(
-            modifier = Modifier.fillMaxSize(),
-            columns = GridCells.Fixed(2),
-        ) {
-            items(
-                images.itemCount,
-            ) { index ->
-                val image = images[index]!!
+        val configuration = LocalConfiguration.current
+        val screenHeight = configuration.screenHeightDp.dp
 
-                val cachedImage by onObserve(image)
-                    .collectAsState(ImageState.Waiting)
-
-                ImageListItem(
-                    cachedImage = cachedImage,
-                    modifier = Modifier
-                        .height(itemSize),
-                    onRequest = { onRequest(image) },
-                    onCancel = { onCancel(image) },
-                    onClick = {
-                        onItemClick(
-                            image.downloadUrl,
-                            KeyGenerator.key(
-                                url = image.downloadUrl,
-                                width = width,
-                                height = height,
-                            ),
-                        )
-                    }
-                )
+        val rowCountForOnePage by remember {
+            derivedStateOf {
+                (screenHeight.value.toInt() / itemSize.value.toInt() + 1)
             }
+        }
+
+        val lastVisibleItemIndex by remember {
+            derivedStateOf {
+                lazyGridState.firstVisibleItemIndex + rowCountForOnePage * columnCount - 1
+            }
+        }
+
+        val onePageItemCount by remember {
+            derivedStateOf {
+                rowCountForOnePage * columnCount
+            }
+        }
+
+        val initialItemLoadCount by remember {
+            derivedStateOf {
+                onePageItemCount * 2
+            }
+        }
+
+        val recompositionLoadIndex by remember {
+            derivedStateOf {
+                val start = lastVisibleItemIndex + onePageItemCount - 1
+                buildList {
+                    for (i in 0 until columnCount) {
+                        add(start + i)
+                    }
+                }
+            }
+        }
+
+        var firstRequested by rememberSaveable {
+            mutableStateOf(false)
+        }
+
+        val itemCount by remember {
+            derivedStateOf {
+                images.itemCount
+            }
+        }
+
+        var preloaded by rememberSaveable {
+            mutableIntStateOf(-1)
+        }
+
+        LaunchedEffect(recompositionLoadIndex, initialItemLoadCount, itemCount) {
+            if (images.itemCount == 0) return@LaunchedEffect
+            if (!firstRequested) {
+                for (index in onePageItemCount until initialItemLoadCount) {
+                    if (index in (preloaded + 1)..<itemCount) {
+                        images[index]?.let {
+                            Log.d("dhlog", "ListScreen test : 프리 로드 트리거 : $index")
+                            onRequest(it)
+                            preloaded = index
+                        }
+                    }
+                }
+                firstRequested = true
+
+            } else {
+                recompositionLoadIndex.forEach { index ->
+                    if (index in (preloaded + 1)..<itemCount) {
+                        images[index]?.let {
+                            Log.d("dhlog", "ListScreen test : 프리 로드 트리거 : $index")
+                            onRequest(it)
+                            preloaded = index
+                        }
+                    }
+                }
+            }
+        }
+
+        ImageList(
+            modifier = Modifier.fillMaxSize(),
+            lazyGridState = lazyGridState,
+            images = images,
+            onObserve = onObserve,
+            itemSize = itemSize,
+            onRequest = onRequest,
+            onCancel = onCancel,
+            onItemClick = onItemClick,
+        )
+    }
+}
+
+@Composable
+private fun ImageList(
+    images: LazyPagingItems<Image>,
+    lazyGridState: LazyGridState,
+    itemSize: Dp,
+    modifier: Modifier = Modifier,
+    onItemClick: (url: String, thumbnailKey: String) -> Unit = { _, _ -> },
+    onObserve: (image: Image) -> StateFlow<ImageState> = { _ -> MutableStateFlow(ImageState.Waiting) },
+    onRequest: (image: Image) -> Unit = {},
+    onCancel: (image: Image) -> Unit = {},
+) {
+    val width = itemSize.toPx().toInt()
+    val height = itemSize.toPx().toInt()
+
+    LazyVerticalGrid(
+        modifier = modifier,
+        columns = GridCells.Fixed(columnCount),
+        state = lazyGridState,
+    ) {
+        items(
+            images.itemCount,
+        ) { index ->
+            val image = images[index]!!
+
+            val cachedImage by onObserve(image)
+                .collectAsState(ImageState.Waiting)
+
+            ImageListItem(
+                cachedImage = cachedImage,
+                modifier = Modifier
+                    .height(itemSize),
+                onRequest = { onRequest(image) },
+                onCancel = { onCancel(image) },
+                onClick = {
+                    onItemClick(
+                        image.downloadUrl,
+                        KeyGenerator.key(
+                            url = image.downloadUrl,
+                            width = width,
+                            height = height,
+                        ),
+                    )
+                }
+            )
         }
     }
 }
@@ -136,7 +251,7 @@ fun ImageList(
 @Composable
 @Preview(showBackground = true, backgroundColor = 0xFFFFFFFF, widthDp = 360, heightDp = 640)
 fun ImageListPreview_Waiting() {
-    ImageList(
+    PreloadImageList(
         images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
         itemSize = 180.dp,
         modifier = Modifier,
@@ -153,7 +268,7 @@ fun ImageListPreview_Success() {
 
     val bitmap = BitmapFactory.decodeResource(context.resources, android.R.drawable.ic_dialog_map)
 
-    ImageList(
+    PreloadImageList(
         images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
         itemSize = 180.dp,
         modifier = Modifier,
@@ -166,7 +281,7 @@ fun ImageListPreview_Success() {
 @Composable
 @Preview(showBackground = true, backgroundColor = 0xFFFFFFFF, widthDp = 360, heightDp = 640)
 fun ImageListPreview_Failure() {
-    ImageList(
+    PreloadImageList(
         images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
         itemSize = 180.dp,
         modifier = Modifier,
@@ -199,17 +314,9 @@ fun ImageListItem(
     onCancel: () -> Unit = {},
     onClick: () -> Unit,
 ) {
-    DisposableEffect(cachedImage) {
-        val prev: ImageState = cachedImage
-
+    LaunchedEffect(cachedImage) {
         if (cachedImage is ImageState.Waiting) {
             onRequest()
-        }
-
-        onDispose {
-//            if (cachedImage is ImageState.Loading && prev is ImageState.Loading) {
-//                onCancel()
-//            }
         }
     }
 
