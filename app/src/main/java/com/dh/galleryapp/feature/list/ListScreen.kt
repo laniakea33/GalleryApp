@@ -47,6 +47,7 @@ import com.dh.galleryapp.core.ui.components.LoadingScreen
 import com.dh.galleryapp.core.ui.components.toPx
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.runBlocking
 
 private const val columnCount = 2
 
@@ -86,10 +87,14 @@ fun ListScreen(
                 )
             },
             onCancel = {
-                viewModel.cancelJob(KeyGenerator.key(it.downloadUrl, width, height))
+                runBlocking {
+                    viewModel.cancelRequest(KeyGenerator.key(it.downloadUrl, width, height))
+                }
             },
             onObserve = {
-                viewModel.observe(it.downloadUrl, width, height)
+                runBlocking {
+                    viewModel.observe(it.downloadUrl, width, height)
+                }
             }
         )
     }

@@ -28,6 +28,7 @@ import com.dh.galleryapp.feature.list.ImageState
 import com.dh.galleryapp.feature.list.ListViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.runBlocking
 
 @Composable
 fun DetailScreen(
@@ -45,16 +46,22 @@ fun DetailScreen(
             .background(color = Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        DetailImage(url,
-            thumbnail = viewModel.requestImageWithKey(thumbnailKey).asImageBitmap(), modifier,
+        DetailImage(
+            url = url,
+            thumbnail = viewModel.requestImageWithKey(thumbnailKey).asImageBitmap(),
+            modifier = modifier,
             onObserve = {
-                viewModel.observe(url)
+                runBlocking {
+                    viewModel.observe(url)
+                }
             },
             onRequest = {
                 viewModel.requestImage(url)
             },
             onCancel = {
-                viewModel.cancelJob(url)
+                runBlocking {
+                    viewModel.cancelRequest(url)
+                }
             }
         )
     }
