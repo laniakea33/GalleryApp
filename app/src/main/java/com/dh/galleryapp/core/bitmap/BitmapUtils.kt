@@ -2,7 +2,6 @@ package com.dh.galleryapp.core.bitmap
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.util.Log
 
 object BitmapUtils {
 
@@ -13,14 +12,10 @@ object BitmapUtils {
 
             BitmapFactory.decodeFile(filePath, this)
 
-            Log.d("dhlog", "decodeSample 샘플링 전 << $outWidth x $outHeight")
-
             inSampleSize = calculateInSampleSize(this, width, height)
             inJustDecodeBounds = false
 
             val bitmap = BitmapFactory.decodeFile(filePath, this)
-
-            Log.d("dhlog", "decodeSample 샘플링 후 << $outWidth x $outHeight")
 
             return@run bitmap
         }
@@ -35,7 +30,7 @@ object BitmapUtils {
     private fun calculateInSampleSize(
         options: BitmapFactory.Options,
         reqWidth: Int,
-        reqHeight: Int
+        reqHeight: Int,
     ): Int {
         val (width: Int, height: Int) = options.run { outWidth to outHeight }
         var inSampleSize = 1

@@ -1,6 +1,5 @@
 package com.dh.galleryapp.core.database
 
-import android.util.Log
 import androidx.room.withTransaction
 import com.dh.galleryapp.core.database.data.ImageRemoteKey
 import com.dh.galleryapp.core.database.data.ImageResponse
@@ -14,7 +13,6 @@ class LocalDataSourceImpl @Inject constructor(
     override fun pagingSource() = dao.pagingSource()
 
     override fun getImages(): Result<List<ImageResponse>> {
-        Log.d("dhlog", "LocalDataSourceImpl getImages()")
         return try {
             val data = dao.getImages()
             Result.success(data)
@@ -43,7 +41,10 @@ class LocalDataSourceImpl @Inject constructor(
 
     override suspend fun getLastRemoteKey() = dao.getLastRemoteKey()
 
-    override suspend fun clearDataAndSaveImagesAndRemoteKey(images: List<ImageResponse>, keys: ImageRemoteKey) {
+    override suspend fun clearDataAndSaveImagesAndRemoteKey(
+        images: List<ImageResponse>,
+        keys: ImageRemoteKey,
+    ) {
         db.withTransaction {
             dao.clearImages()
             dao.clearRemoteKeys()

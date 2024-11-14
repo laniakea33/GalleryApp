@@ -2,16 +2,16 @@ package com.dh.galleryapp.feature.list
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.util.Log
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
-import com.dh.galleryapp.core.KeyGenerator
 import com.dh.galleryapp.core.bitmap.BitmapUtils
+import com.dh.galleryapp.core.bitmapcache.BitmapCacheObject
 import com.dh.galleryapp.core.cache.disk.DiskCache
 import com.dh.galleryapp.core.cache.memory.MemoryCache
 import com.dh.galleryapp.core.data.repository.Repository
+import com.dh.galleryapp.core.key.KeyGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -34,10 +34,6 @@ class ListViewModel @Inject constructor(
     @ApplicationContext val context: Context,
 ) : ViewModel() {
 
-    init {
-        Log.d("dhlog", "ListViewModel init : $this")
-    }
-
     //  이미지 데이터 목록
     val images = repository.loadImageList()
         .cachedIn(viewModelScope)
@@ -52,7 +48,6 @@ class ListViewModel @Inject constructor(
         val key = KeyGenerator.key(url)
 
         return CoroutineScope(Dispatchers.IO).launch {
-            Log.d("dhlog", "ListViewModel requestImage : $url")
             if (isLoading(key)) return@launch
 
             updateState(key, ImageState.Loading)
@@ -113,31 +108,17 @@ class ListViewModel @Inject constructor(
         val key = KeyGenerator.key(url, width, height)
 
         CoroutineScope(Dispatchers.IO).launch {
-            Log.d(
-                "dhlog",
-                "ListViewModel requestImageSampling : id$id : ${getImageState(key)?.value}"
-            )
             if (isLoading(key)) return@launch
 
             updateState(key, ImageState.Loading)
 
-            if (memoryCache.isCached(key).also {
-                    if (it) {
-                        Log.d(
-                            "dhlog",
-                            "ListViewModel requestImageSampling : $id : memoryCache.isCached ${true}"
-                        )
-                        val bitmap = memoryCache.cachedImage(key)!!.data as Bitmap
-                        updateState(key, ImageState.Success(bitmap))
-                        memoryCache.lruCacheProcess(key, false)
-                        diskCache.lruCacheProcess(key, false)
-                    } else {
-                        Log.d(
-                            "dhlog",
-                            "ListViewModel requestImageSampling : $id : memoryCache.isCached false"
-                        )
-                    }
-                }) return@launch
+            if (memoryCache.isCached(key)) {
+                val bitmap = memoryCache.cachedImage(key)!!.data as Bitmap
+                updateState(key, ImageState.Success(bitmap))
+                memoryCache.lruCacheProcess(key, false)
+                diskCache.lruCacheProcess(key, false)
+                return@launch
+            }
 
             val orgFilePath = "${diskCache.diskCacheDir}/$originKey"
             val filePath = "${diskCache.diskCacheDir}/$key"
@@ -145,12 +126,6 @@ class ListViewModel @Inject constructor(
             yield()
 
             if (diskCache.isCached(key)) {
-                Log.d(
-                    "dhlog",
-                    "ListViewModel requestImageSampling : $id : diskCache.isCached ${true}"
-                )
-                yield()
-
                 val bitmap = BitmapUtils.decode(filePath)!!
                 updateState(key, ImageState.Success(bitmap))
 

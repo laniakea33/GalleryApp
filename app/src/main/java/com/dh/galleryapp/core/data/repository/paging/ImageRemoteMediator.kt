@@ -1,6 +1,5 @@
 package com.dh.galleryapp.core.data.repository.paging
 
-import android.util.Log
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
 import androidx.paging.PagingState
@@ -21,7 +20,7 @@ class ImageRemoteMediator @Inject constructor(
 
     override suspend fun load(
         loadType: LoadType,
-        state: PagingState<Int, ImageResponse>
+        state: PagingState<Int, ImageResponse>,
     ): MediatorResult {
         val page = when (loadType) {
             LoadType.REFRESH -> 1
@@ -30,12 +29,9 @@ class ImageRemoteMediator @Inject constructor(
                 endOfPaginationReached = true
             )
         }
-        Log.d("dhlog", "ImageRemoteMediator load() page: $page")
 
         val result = try {
             val images = network.loadImageList(page, pageSize)
-
-            Log.d("dhlog", "ImageRemoteMediator load() loadType: $loadType : size : ${images.size}")
 
             val endOfPaginationReached = images.size < pageSize
 
@@ -44,8 +40,6 @@ class ImageRemoteMediator @Inject constructor(
 
             val key = ImageRemoteKey(prevPage = prevPage, nextPage = nextPage)
 
-
-            Log.d("dhlog", "ImageRemoteMediator load() save Data to db")
             if (loadType == LoadType.REFRESH) {
                 local.clearDataAndSaveImagesAndRemoteKey(
                     images.map { it.toDatabaseImageResponse() },

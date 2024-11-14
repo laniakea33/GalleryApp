@@ -1,6 +1,5 @@
 package com.dh.galleryapp.core.data.repository
 
-import android.util.Log
 import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
@@ -27,8 +26,6 @@ class RepositoryImpl @Inject constructor(
 
     @OptIn(ExperimentalPagingApi::class)
     override fun loadImageList(): Flow<PagingData<Image>> {
-        Log.d("dhlog", "RepositoryImpl loadImageList()")
-
         return Pager(
             config = PagingConfig(
                 pageSize = pageSize,
@@ -45,7 +42,6 @@ class RepositoryImpl @Inject constructor(
     }
 
     override suspend fun downloadImage(url: String, filePath: String): Result<String> {
-        Log.d("dhlog", "RepositoryImpl downloadImage() : $url")
         return try {
             val responseBody = networkDataSource.downloadImage(url)
 
@@ -105,7 +101,7 @@ class RepositoryImpl @Inject constructor(
     override fun writeFileOutputStreamToFile(
         dirPath: String,
         fileName: String,
-        onFileOutputStream: (FileOutputStream) -> Unit
+        onFileOutputStream: (FileOutputStream) -> Unit,
     ) {
         return storageDataSource.writeFileOutputStreamToFile(dirPath, fileName, onFileOutputStream)
     }

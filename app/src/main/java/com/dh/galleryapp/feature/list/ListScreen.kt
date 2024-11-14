@@ -1,7 +1,6 @@
 package com.dh.galleryapp.feature.list
 
 import android.graphics.BitmapFactory
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -41,7 +40,7 @@ import androidx.paging.LoadState
 import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
-import com.dh.galleryapp.core.KeyGenerator
+import com.dh.galleryapp.core.key.KeyGenerator
 import com.dh.galleryapp.core.model.Image
 import com.dh.galleryapp.core.ui.components.LoadingScreen
 import com.dh.galleryapp.core.ui.components.toPx
@@ -171,7 +170,6 @@ fun PreloadImageList(
                 for (index in onePageItemCount until initialItemLoadCount) {
                     if (index in (preloaded + 1)..<itemCount) {
                         images[index]?.let {
-                            Log.d("dhlog", "ListScreen test : 프리 로드 트리거 : $index")
                             onRequest(it)
                             preloaded = index
                         }
@@ -183,7 +181,6 @@ fun PreloadImageList(
                 recompositionLoadIndex.forEach { index ->
                     if (index in (preloaded + 1)..<itemCount) {
                         images[index]?.let {
-                            Log.d("dhlog", "ListScreen test : 프리 로드 트리거 : $index")
                             onRequest(it)
                             preloaded = index
                         }

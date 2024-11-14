@@ -1,4 +1,4 @@
-package com.dh.galleryapp.core
+package com.dh.galleryapp.core.key
 
 import java.net.URLEncoder
 
