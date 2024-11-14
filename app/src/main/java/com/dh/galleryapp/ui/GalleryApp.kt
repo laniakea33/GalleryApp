@@ -22,10 +22,10 @@ fun GalleryApp(
     modifier: Modifier = Modifier
 ) {
     val navController = rememberNavController()
+    val viewModel: ListViewModel = hiltViewModel()
 
     NavHost(navController, startDestination = Navigation.List.name, modifier = modifier) {
         composable(Navigation.List.name) { backStackEntry ->
-            val viewModel: ListViewModel = hiltViewModel(backStackEntry)
             ListScreen(
                 viewModel = viewModel,
                 modifier = Modifier.fillMaxSize(),
@@ -53,11 +53,6 @@ fun GalleryApp(
                 }
             )
         ) { backStackEntry ->
-            val viewModel: ListViewModel =
-                if (navController.previousBackStackEntry != null) hiltViewModel(
-                    navController.previousBackStackEntry!!
-                ) else hiltViewModel(backStackEntry)
-
             val url = backStackEntry.arguments?.getString(argumentUrl)!!
             val thumbnailKey = URLEncoder.encode(
                 backStackEntry.arguments?.getString(argumentThumbnailKey)!!,

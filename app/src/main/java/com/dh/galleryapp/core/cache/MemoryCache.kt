@@ -1,6 +1,7 @@
 package com.dh.galleryapp.core.cache
 
 import android.graphics.Bitmap
+import android.util.Log
 import java.util.LinkedList
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,10 +26,15 @@ class MemoryCache @Inject constructor() : Cache {
 
     @Synchronized
     override fun lruCacheProcess(key: String, isNewData: Boolean, addedSize: Long) {
+        Log.d("dhlog", "MemoryCache lruCacheProcess() : $addedSize / ${memoryCacheSizeMax}")
         if (isNewData) {
             memoryCacheSize += addedSize
 
             while (memoryCacheSize >= memoryCacheSizeMax) {
+                Log.d(
+                    "dhlog",
+                    "MemoryCache removeLastCache() : $memoryCacheSize / ${memoryCacheSizeMax}"
+                )
                 removeLastCache()
             }
         }
@@ -52,6 +58,10 @@ class MemoryCache @Inject constructor() : Cache {
 
     @Synchronized
     fun newCache(key: String, bitmap: Bitmap) {
+        Log.d(
+            "dhlog",
+            "MemoryCache newCache : $key, 이미 있는 키? : ${memoryCacheKeyList.contains(key)}"
+        )
         if (!memoryCacheKeyList.contains(key)) {
             memoryCacheKeyList.add(0, key)
             memoryCacheMap[key] = bitmap
