@@ -16,7 +16,7 @@ class DiskCache @Inject constructor(
 
     private val diskCacheKeyList = LinkedList<String>()
     private var diskCacheSize: Long = 0
-    private val diskCacheSizeBytesMax: Long = 1024 * 1024 * 100 // 100 MB
+    private val diskCacheSizeBytesMax: Long = 1024 * 1024 * 700 // 700 MB
 
     val diskCacheDir: String = context.externalCacheDir!!.absolutePath
     private val journalFileDir = context.filesDir

@@ -12,7 +12,7 @@ class MemoryCache @Inject constructor() : Cache {
     private val memoryCacheMap = HashMap<String, Bitmap>()
     private val memoryCacheKeyList = LinkedList<String>()
     private var memoryCacheSize: Long = 0
-    private val memoryCacheSizeMax: Long = 1024 * 1024 * 20 // 20mb
+    private val memoryCacheSizeMax: Long = 1024 * 1024 * 40 // 40mb
 
     @Synchronized
     override fun isCached(key: String): Boolean {
