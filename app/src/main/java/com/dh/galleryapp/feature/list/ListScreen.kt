@@ -75,7 +75,7 @@ fun ListScreen(
                 )
             },
             onCancel = {
-                viewModel.cancelJob(it.id)
+                viewModel.cancelJob(KeyGenerator.key(it.downloadUrl, width, height))
             },
             onObserve = {
                 viewModel.observe(it.downloadUrl, width, height)

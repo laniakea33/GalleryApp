@@ -4,7 +4,6 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
@@ -40,15 +39,19 @@ class ListViewModel @Inject constructor(
     private val jobs = HashMap<String, Job?>()
 
     fun requestImage(url: String): Job {
+        Log.d("dhlog", "ListViewModel requestImage() called")
         val key = KeyGenerator.key(url)
 
         return CoroutineScope(Dispatchers.IO).launch {
+            Log.d("dhlog", "ListViewModel requestImage() : ${memoryCache.cacheFlow(key).value}")
+
             if (memoryCache.isLoading(key)) return@launch
 
             memoryCache.update(key, CacheState.Loading)
 
             if (memoryCache.isCached(key).also {
                     if (it) {
+                        memoryCache.loadCachedImage(key)
                         memoryCache.lruCacheProcess(key, false)
                         diskCache.lruCacheProcess(key, false)
                     }
@@ -89,6 +92,8 @@ class ListViewModel @Inject constructor(
                     }
                 }
             }
+        }.also {
+            jobs[url] = it
         }
     }
 
@@ -102,12 +107,18 @@ class ListViewModel @Inject constructor(
                 "ListViewModel requestSampledImage() : id$id $url, size : $width x $height, key : $key"
             )
 
-            if (memoryCache.isLoading(key)) return@launch
+            if (memoryCache.isLoading(key).also {
+                    if (it) Log.d(
+                        "dhlog",
+                        "ListViewModel isLoading()"
+                    )
+                }) return@launch
 
             memoryCache.update(key, CacheState.Loading)
 
             if (memoryCache.isCached(key).also {
                     if (it) {
+                        memoryCache.loadCachedImage(key)
                         memoryCache.lruCacheProcess(key, false)
                         diskCache.lruCacheProcess(key, false)
                     }
@@ -175,7 +186,7 @@ class ListViewModel @Inject constructor(
                 }
             }
         }.also {
-            jobs[id] = it
+            jobs[key] = it
         }
     }
 
@@ -239,8 +250,9 @@ class ListViewModel @Inject constructor(
         return BitmapUtils.decode("${diskCache.diskCacheDir}/$key")!!
     }
 
-    fun cancelJob(id: String) {
-        jobs[id]?.cancel()
+    fun cancelJob(key: String) {
+        jobs[key]?.cancel()
+        memoryCache.disposeState(key)
     }
 }
 
