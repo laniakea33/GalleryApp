@@ -17,7 +17,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.dh.galleryapp.core.ui.components.ZoomableImage
-import com.dh.galleryapp.feature.list.CacheState
+import com.dh.galleryapp.feature.list.ImageState
 import com.dh.galleryapp.feature.list.ListViewModel
 
 @Composable
@@ -37,10 +37,10 @@ fun DetailScreen(
         contentAlignment = Alignment.Center
     ) {
         val cachedImage by viewModel.observe(url)
-            .collectAsState(CacheState.Loading)
+            .collectAsState(ImageState.Loading)
 
         when (cachedImage) {
-            CacheState.Loading, CacheState.Waiting -> {
+            ImageState.Loading, ImageState.Waiting -> {
                 Image(
                     bitmap = viewModel.requestImageWithKey(thumbnailKey).asImageBitmap(),
                     contentDescription = null,
@@ -49,15 +49,15 @@ fun DetailScreen(
                 )
             }
 
-            is CacheState.Success -> {
+            is ImageState.Success -> {
                 ZoomableImage(
-                    bitmap = (cachedImage as CacheState.Success).data.asImageBitmap(),
+                    bitmap = (cachedImage as ImageState.Success).data.asImageBitmap(),
                 )
             }
 
-            is CacheState.Failure -> {
+            is ImageState.Failure -> {
                 Text(
-                    text = (cachedImage as CacheState.Failure).t.message ?: "오류 발생",
+                    text = (cachedImage as ImageState.Failure).t.message ?: "오류 발생",
                     style = MaterialTheme.typography
                         .headlineMedium,
                     modifier = modifier

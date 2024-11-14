@@ -90,7 +90,7 @@ fun ImageList(
     itemSize: Dp,
     modifier: Modifier = Modifier,
     onItemClick: (url: String, thumbnailKey: String) -> Unit = { _, _ -> },
-    onObserve: (image: Image) -> StateFlow<CacheState> = { _ -> MutableStateFlow(CacheState.Waiting) },
+    onObserve: (image: Image) -> StateFlow<ImageState> = { _ -> MutableStateFlow(ImageState.Waiting) },
     onRequest: (image: Image) -> Unit = {},
     onCancel: (image: Image) -> Unit = {},
 ) {
@@ -108,7 +108,7 @@ fun ImageList(
                 val image = images[index]!!
 
                 val cachedImage by onObserve(image)
-                    .collectAsState(CacheState.Waiting)
+                    .collectAsState(ImageState.Waiting)
 
                 ImageListItem(
                     cachedImage = cachedImage,
@@ -140,7 +140,7 @@ fun ImageListPreview_Waiting() {
         itemSize = 180.dp,
         modifier = Modifier,
         onObserve = { index ->
-            MutableStateFlow(CacheState.Waiting)
+            MutableStateFlow(ImageState.Waiting)
         },
     )
 }
@@ -157,7 +157,7 @@ fun ImageListPreview_Success() {
         itemSize = 180.dp,
         modifier = Modifier,
         onObserve = { index ->
-            MutableStateFlow(CacheState.Success(bitmap!!))
+            MutableStateFlow(ImageState.Success(bitmap!!))
         },
     )
 }
@@ -170,7 +170,7 @@ fun ImageListPreview_Failure() {
         itemSize = 180.dp,
         modifier = Modifier,
         onObserve = { index ->
-            MutableStateFlow(CacheState.Failure(RuntimeException("심각한 오류 발생")))
+            MutableStateFlow(ImageState.Failure(RuntimeException("심각한 오류 발생")))
         },
     )
 }
@@ -192,23 +192,29 @@ private val dummyImages = buildList {
 
 @Composable
 fun ImageListItem(
-    cachedImage: CacheState,
+    cachedImage: ImageState,
     modifier: Modifier = Modifier,
     onRequest: () -> Unit = {},
     onCancel: () -> Unit = {},
     onClick: () -> Unit,
 ) {
     DisposableEffect(cachedImage) {
-        val prev: CacheState = cachedImage
+        val prev: ImageState = cachedImage
 
-        if (cachedImage is CacheState.Waiting) {
+        if (cachedImage is ImageState.Waiting) {
             onRequest()
         }
 
         onDispose {
-            if (cachedImage is CacheState.Loading && prev is CacheState.Loading) {
-                onCancel()
-            }
+//            if (cachedImage is ImageState.Loading && prev is ImageState.Loading) {
+//                onCancel()
+//            }
+        }
+    }
+
+    DisposableEffect(LocalContext.current) {
+        onDispose {
+            onCancel()
         }
     }
 
@@ -221,20 +227,20 @@ fun ImageListItem(
 
 @Composable
 private fun ImageListItemContent(
-    cachedImage: CacheState,
+    cachedImage: ImageState,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
 ) {
     when (cachedImage) {
-        CacheState.Loading, CacheState.Waiting -> {
+        ImageState.Loading, ImageState.Waiting -> {
             LoadingScreen(
                 modifier = modifier,
             )
         }
 
-        is CacheState.Success -> {
+        is ImageState.Success -> {
             Image(
-                bitmap = (cachedImage as CacheState.Success).data.asImageBitmap(),
+                bitmap = (cachedImage as ImageState.Success).data.asImageBitmap(),
                 contentDescription = null,
                 modifier = modifier.clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -245,9 +251,9 @@ private fun ImageListItemContent(
             )
         }
 
-        is CacheState.Failure -> {
+        is ImageState.Failure -> {
             Text(
-                text = (cachedImage as CacheState.Failure).t.message ?: "오류 발생",
+                text = (cachedImage as ImageState.Failure).t.message ?: "오류 발생",
                 style = MaterialTheme.typography
                     .headlineMedium,
                 modifier = modifier

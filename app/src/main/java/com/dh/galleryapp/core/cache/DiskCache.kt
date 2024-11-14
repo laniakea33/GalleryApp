@@ -1,7 +1,6 @@
 package com.dh.galleryapp.core.cache
 
 import android.content.Context
-import android.util.Log
 import com.dh.galleryapp.core.data.repository.Repository
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.FileOutputStream
@@ -16,25 +15,22 @@ class DiskCache @Inject constructor(
 ) : Cache {
 
     private val diskCacheKeyList = LinkedList<String>()
-    var diskCacheSize: Long = 0
+    private var diskCacheSize: Long = 0
     private val diskCacheSizeBytesMax: Long = 1024 * 1024 * 100 // 100 MB
 
-    val diskCacheDir = context.externalCacheDir!!.absolutePath
+    val diskCacheDir: String = context.externalCacheDir!!.absolutePath
     private val journalFileDir = context.filesDir
     private val journalFileName = "journal.txt"
     private val journalFilePath = "$journalFileDir/$journalFileName"
 
     init {
         diskCacheSize = repository.fileSizeSum(diskCacheDir)
-        Log.d("dhlog", "DiskCache init() diskCacheSize $diskCacheSize")
         loadJournalFile(diskCacheKeyList)
     }
 
     private fun loadJournalFile(into: MutableList<String>) {
         repository.createFile(journalFilePath)
         into.addAll(repository.readLines(journalFilePath))
-
-        Log.d("dhlog", "DiskCache loadJournalFile() ${into.size}")
 
         val fileNames = repository.fileNames(diskCacheDir)
 
@@ -53,23 +49,16 @@ class DiskCache @Inject constructor(
         }
 
         repository.deleteFiles(fakeFileNames)
-
-        Log.d(
-            "dhlog",
-            "DiskCache loadJournalFile() fakeKey : ${fakeKey.size}, fakeFiles : ${fakeFileNames.size}"
-        )
     }
 
+    @Synchronized
     override fun isCached(key: String): Boolean {
         val filePath = "$diskCacheDir/$key"
-        return repository.fileExists(filePath).also {
-            if (it) Log.d("dhlog", "DiskCache isCachedInDisk() : $key")
-        }
+        return repository.fileExists(filePath)
     }
 
     @Synchronized
     override fun lruCacheProcess(key: String, isNewData: Boolean, addedSize: Long) {
-        Log.d("dhlog", "DiskCache diskLruCacheProcess() : $key")
         if (isNewData) {
             diskCacheSize += addedSize
 
@@ -86,13 +75,9 @@ class DiskCache @Inject constructor(
 
         diskCacheKeyList.add(0, key)
         repository.prependStringToFile(journalFilePath, key)
-
-        Log.d(
-            "dhlog",
-            "DiskCache diskLruCacheProcess() : $key diskCacheKeyList : ${diskCacheKeyList.size} fin"
-        )
     }
 
+    @Synchronized
     override fun removeLastCache() {
         val targetKey = diskCacheKeyList.lastOrNull() ?: return
         val targetFileName = "$diskCacheDir/$targetKey"
@@ -102,26 +87,14 @@ class DiskCache @Inject constructor(
             val targetSize = repository.fileLength(targetFileName)
             repository.deleteFile(targetFileName)
             diskCacheSize -= targetSize
-            Log.d("dhlog", "DiskCache diskLruCacheProcess() 와일문도는중 : 실제로 파일이 삭제됨")
         }
 
-        Log.d(
-            "dhlog",
-            "DiskCache diskLruCacheProcess() 와일문도는중 : $targetKey, diskCacheSize : $diskCacheSize > $diskCacheSizeBytesMax"
-        )
-
         diskCacheKeyList.remove(targetKey)
-
-        Log.d(
-            "dhlog",
-            "DiskCache diskLruCacheProcess() 와일문도는중 : 파일 삭제 됨 keySize :${diskCacheKeyList.size}, file size : ${
-                repository.fileSizeSum(diskCacheDir)
-            }"
-        )
 
         repository.removeStringFromFile(journalFilePath, targetKey)
     }
 
+    @Synchronized
     fun saveFileOutputStreamToDiskCache(
         fileName: String,
         onFileOutputStream: (FileOutputStream) -> Unit
