@@ -92,7 +92,6 @@ class DiskCache @Inject constructor(
         }
     }
 
-    @Synchronized
     override fun removeLastCache() {
         println("와일문")
         val targetKey = diskCacheKeyList.lastOrNull() ?: return
