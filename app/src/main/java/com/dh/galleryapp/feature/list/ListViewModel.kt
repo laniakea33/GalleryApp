@@ -44,10 +44,12 @@ class ListViewModel @Inject constructor(
     private var imageStateMap = HashMap<String, MutableStateFlow<ImageState>>()
     private val mutex = Mutex()
 
-    fun requestImage(url: String): Job {
+    fun requestImage(url: String) {
         val key = KeyGenerator.key(url)
 
-        return CoroutineScope(Dispatchers.IO).launch {
+        if (jobs[url]?.isActive == true) return
+
+        CoroutineScope(Dispatchers.IO).launch {
             if (isLoading(key)) return@launch
 
             updateState(key, ImageState.Loading)
@@ -106,6 +108,8 @@ class ListViewModel @Inject constructor(
     fun requestImageSampling(url: String, width: Int, height: Int, id: String) {
         val originKey = KeyGenerator.key(url)
         val key = KeyGenerator.key(url, width, height)
+
+        if (jobs[key]?.isActive == true) return
 
         CoroutineScope(Dispatchers.IO).launch {
             if (isLoading(key)) return@launch
