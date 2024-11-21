@@ -14,7 +14,6 @@ import com.dh.galleryapp.core.data.repository.Repository
 import com.dh.galleryapp.core.key.KeyGenerator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -49,7 +48,7 @@ class ListViewModel @Inject constructor(
 
         if (jobs[url]?.isActive == true) return
 
-        CoroutineScope(Dispatchers.IO).launch {
+        viewModelScope.launch(Dispatchers.IO) {
             if (isLoading(key)) return@launch
 
             updateState(key, ImageState.Loading)
@@ -111,7 +110,7 @@ class ListViewModel @Inject constructor(
 
         if (jobs[key]?.isActive == true) return
 
-        CoroutineScope(Dispatchers.IO).launch {
+        viewModelScope.launch(Dispatchers.IO) {
             if (isLoading(key)) return@launch
 
             updateState(key, ImageState.Loading)
