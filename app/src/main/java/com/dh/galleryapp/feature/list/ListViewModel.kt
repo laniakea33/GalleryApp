@@ -233,7 +233,9 @@ class ListViewModel @Inject constructor(
                 height
             ) else KeyGenerator.key(downloadUrl)
 
-        keyIndexMap.putOrUpdate(key, index, true)
+        mutex.withLock {
+            keyIndexMap.putOrUpdate(key, index, true)
+        }
 
         return imageStateFlow(key)
     }
@@ -242,9 +244,11 @@ class ListViewModel @Inject constructor(
         jobs[key]?.cancel()
         jobs[key] = null
 
-        keyIndexMap.putOrUpdate(key, index, false)
-        val activeCount = keyIndexMap.getActiveCount(key)
-        //  TODO active가 있는지 체크해서 캔슬 로직 실행
+        mutex.withLock {
+            keyIndexMap.putOrUpdate(key, index, false)
+            val activeCount = keyIndexMap.getActiveCount(key)
+            //  TODO active가 있는지 체크해서 캔슬 로직 실행
+        }
 
         removeState(key)
     }
