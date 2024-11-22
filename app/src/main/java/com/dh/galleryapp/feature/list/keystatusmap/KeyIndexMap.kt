@@ -1,4 +1,6 @@
-package com.dh.galleryapp.feature.list.model
+package com.dh.galleryapp.feature.list.keystatusmap
+
+import com.dh.galleryapp.feature.list.model.UiIndex
 
 class KeyIndexMap {
     private val map = HashMap<String, HashSet<UiIndex>>()

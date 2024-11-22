@@ -93,7 +93,7 @@ fun ListScreen(
             },
             onCancel = { index, downloadUrl ->
                 runBlocking {
-                    viewModel.cancelRequest(
+                    viewModel.dispose(
                         index,
                         KeyGenerator.key(downloadUrl, width, height)
                     )
