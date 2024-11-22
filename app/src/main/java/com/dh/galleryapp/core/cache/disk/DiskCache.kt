@@ -1,6 +1,7 @@
 package com.dh.galleryapp.core.cache.disk
 
 import com.dh.galleryapp.core.cache.Cache
+import com.dh.galleryapp.core.data.di.Real
 import com.dh.galleryapp.core.data.repository.Repository
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -13,7 +14,7 @@ import javax.inject.Singleton
 
 @Singleton
 class DiskCache @Inject constructor(
-    private val repository: Repository,
+    @Real private val repository: Repository,
     @Named("diskCacheDir") val diskCacheDir: String,
     @Named("journalFileDir") val journalFileDir: String,
 ) : Cache {
@@ -86,8 +87,6 @@ class DiskCache @Inject constructor(
                 diskCacheKeyList.add(0, key)
                 repository.prependStringToFile(journalFilePath, key)
             }
-
-            println("newCache 끝")
         }
     }
 
@@ -128,7 +127,6 @@ class DiskCache @Inject constructor(
             repository.prependStringToFile(journalFilePath, key)
             repository.createFile("$diskCacheDir/$key")
         }
-        println("newCache 끝")
     }
 
     @TestOnly

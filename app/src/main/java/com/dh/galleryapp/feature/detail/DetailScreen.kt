@@ -21,7 +21,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dh.galleryapp.core.ui.components.ZoomableImage
-import com.dh.galleryapp.feature.list.ImageState
 import com.dh.galleryapp.feature.list.ListViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,86 +38,86 @@ fun DetailScreen(
             .background(color = Color.Black),
         contentAlignment = Alignment.Center
     ) {
-        DetailImage(
-            url = url,
-            thumbnail = viewModel.requestImageWithKey(thumbnailKey).asImageBitmap(),
-            modifier = modifier,
-            onObserve = {
-                runBlocking {
-                    //  TODO viewModel 분리 작업
-                    viewModel.observe(-1, url)
-                }
-            },
-            onRequest = {
-                viewModel.requestImage(url)
-            },
-            onCancel = {
-                runBlocking {
-                    //  TODO viewModel 분리 작업
-                    viewModel.cancelRequest(-1, url)
-                }
-            }
-        )
+//        DetailImage(
+//            url = url,
+//            thumbnail = viewModel.requestImageWithKey(thumbnailKey).asImageBitmap(),
+//            modifier = modifier,
+//            onObserve = {
+//                runBlocking {
+//                    //  TODO viewModel 분리 작업
+//                    viewModel.observe(-1, url)
+//                }
+//            },
+//            onRequest = {
+//                viewModel.requestImage(url)
+//            },
+//            onCancel = {
+//                runBlocking {
+//                    //  TODO viewModel 분리 작업
+//                    viewModel.cancelRequest(-1, url)
+//                }
+//            }
+//        )
     }
 }
 
-@Composable
-private fun DetailImage(
-    url: String,
-    thumbnail: ImageBitmap,
-    modifier: Modifier = Modifier,
-    onObserve: (url: String) -> StateFlow<ImageState> = { _ -> MutableStateFlow(ImageState.Waiting) },
-    onRequest: () -> Unit = {},
-    onCancel: () -> Unit = {},
-) {
-    val cachedImage by onObserve(url)
-        .collectAsState(ImageState.Waiting)
-
-    val cacheState by remember {
-        derivedStateOf {
-            cachedImage
-        }
-    }
-
-    DisposableEffect(cacheState) {
-        val prev: ImageState = cacheState
-
-        if (cachedImage is ImageState.Waiting) {
-            onRequest()
-        }
-
-        onDispose {
-            if (cacheState is ImageState.Loading && prev is ImageState.Loading) {
-                onCancel()
-            }
-        }
-    }
-
-    when (cacheState) {
-        ImageState.Loading, ImageState.Waiting -> {
-            Image(
-                bitmap = thumbnail,
-                contentDescription = null,
-                modifier = modifier,
-                contentScale = ContentScale.Fit
-            )
-        }
-
-        is ImageState.Success -> {
-            ZoomableImage(
-                bitmap = (cachedImage as ImageState.Success).data.asImageBitmap(),
-            )
-        }
-
-        is ImageState.Failure -> {
-            Text(
-                text = (cachedImage as ImageState.Failure).t.message ?: "오류 발생",
-                style = MaterialTheme.typography
-                    .headlineMedium,
-                modifier = modifier
-                    .padding(8.dp)
-                    .background(color = Color.LightGray),
-            )
-        }
-    }
-}
+//@Composable
+//private fun DetailImage(
+//    url: String,
+//    thumbnail: ImageBitmap,
+//    modifier: Modifier = Modifier,
+//    onObserve: (url: String) -> StateFlow<ImageResult> = { _ -> MutableStateFlow(ImageResult.Waiting) },
+//    onRequest: () -> Unit = {},
+//    onCancel: () -> Unit = {},
+//) {
+//    val cachedImage by onObserve(url)
+//        .collectAsState(ImageResult.Waiting)
+//
+//    val cacheState by remember {
+//        derivedStateOf {
+//            cachedImage
+//        }
+//    }
+//
+//    DisposableEffect(cacheState) {
+//        val prev: ImageResult = cacheState
+//
+//        if (cachedImage is ImageResult.Waiting) {
+//            onRequest()
+//        }
+//
+//        onDispose {
+//            if (cacheState is ImageResult.Loading && prev is ImageResult.Loading) {
+//                onCancel()
+//            }
+//        }
+//    }
+//
+//    when (cacheState) {
+//        ImageResult.Loading, ImageResult.Waiting -> {
+//            Image(
+//                bitmap = thumbnail,
+//                contentDescription = null,
+//                modifier = modifier,
+//                contentScale = ContentScale.Fit
+//            )
+//        }
+//
+//        is ImageResult.Success -> {
+//            ZoomableImage(
+//                bitmap = (cachedImage as ImageResult.Success).data.asImageBitmap(),
+//            )
+//        }
+//
+//        is ImageResult.Failure -> {
+//            Text(
+//                text = (cachedImage as ImageResult.Failure).t.message ?: "오류 발생",
+//                style = MaterialTheme.typography
+//                    .headlineMedium,
+//                modifier = modifier
+//                    .padding(8.dp)
+//                    .background(color = Color.LightGray),
+//            )
+//        }
+//    }
+//}

@@ -2,23 +2,26 @@ package com.dh.galleryapp.feature.list
 
 import android.content.Context
 import android.graphics.Bitmap
-import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
+import androidx.paging.map
 import com.dh.galleryapp.core.bitmap.BitmapUtils
 import com.dh.galleryapp.core.bitmapcache.BitmapCacheObject
 import com.dh.galleryapp.core.cache.disk.DiskCache
 import com.dh.galleryapp.core.cache.memory.MemoryCache
+import com.dh.galleryapp.core.data.di.Real
 import com.dh.galleryapp.core.data.repository.Repository
 import com.dh.galleryapp.core.key.KeyGenerator
+import com.dh.galleryapp.feature.list.model.ImageRequest
+import com.dh.galleryapp.feature.list.model.ImageResult
 import com.dh.galleryapp.feature.list.model.KeyIndexMap
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -28,23 +31,43 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ListViewModel @Inject constructor(
-    private val repository: Repository,
+    @Real private val repository: Repository,
     private val memoryCache: MemoryCache,
     private val diskCache: DiskCache,
     @ApplicationContext val context: Context,
 ) : ViewModel() {
 
-    //  이미지 데이터 목록
-    val images = repository.loadImageList()
+    //  이미지 요청 데이터 목록
+    val imageRequestList = repository.loadImageList()
+        .map { pagingData ->
+            pagingData.map {
+                ImageRequest(
+                    downloadUrl = it.downloadUrl,
+                    id = it.id
+                )
+            }
+        }
         .cachedIn(viewModelScope)
 
-    //  요청들을 관리하기 위한 collection
+    //  요청들을 관리하기 위한 collection.
     private val jobs = HashMap<String, Job?>()
 
-    private var imageStateMap = HashMap<String, MutableStateFlow<ImageState>>()
-    private val mutex = Mutex()
+    //  이미지 응답 상태
+    //  observe하면 새로 추가됨. 이미 있으면 덮어쓰기, dispose되면 Unknown으로 세팅됨.
+    //  observe할 떄 keyImageResultMap에서 상태를 가져옴
+    val imageResultList = mutableStateListOf<ImageResult>()
 
+    //  이미지 key별 index. 같은 key를 여러 index에서 요청할 경우를 위함.
+    //  observe할 때 add되고 제거되지 않는다.
+    //  observe할 때 isActive = true, dispose할 때 isActive = false
     private val keyIndexMap = KeyIndexMap()
+
+    //  이미지 key별 응답 상태. 같은 key를 여러 index에서 요청할 경우를 위함.
+    //  Wait, Loading, Success, Failure 4개만 가진다.
+    //  해당 key가 처음 observe될 때 add, key를 observing하는 index가 모두 dispose되면 remove
+    private val keyImageResultMap = mutableMapOf<String, ImageResult>()
+
+    private val mutex = Mutex()
 
     fun requestImage(url: String) {
         val key = KeyGenerator.key(url)
@@ -52,9 +75,9 @@ class ListViewModel @Inject constructor(
         if (jobs[url]?.isActive == true) return
 
         viewModelScope.launch(Dispatchers.IO) {
-            if (isLoading(key)) return@launch
+            if (noNeedToLoad(key)) return@launch
 
-            updateState(key, ImageState.Loading)
+            updateState(key, ImageResult.Loading)
 
             val filePath = "${diskCache.diskCacheDir}/$key"
 
@@ -63,7 +86,7 @@ class ListViewModel @Inject constructor(
             if (diskCache.isCached(key)) {
                 val bitmap = BitmapUtils.decode(filePath)!!
 
-                updateState(key, ImageState.Success(bitmap))
+                updateState(key, ImageResult.Success(bitmap))
 
                 yield()
 
@@ -82,7 +105,7 @@ class ListViewModel @Inject constructor(
 
                         val bitmap = BitmapUtils.decode(filePath)!!
 
-                        updateState(key, ImageState.Success(bitmap))
+                        updateState(key, ImageResult.Success(bitmap))
 
                         val filePath = "${diskCache.diskCacheDir}/$key"
                         val sampledFileSize = File(filePath).length()
@@ -91,14 +114,14 @@ class ListViewModel @Inject constructor(
 
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        updateState(key, ImageState.Failure(e))
+                        updateState(key, ImageResult.Failure(e))
                     }
 
                 } else {
                     result.exceptionOrNull().let {
                         it ?: RuntimeException("알수없는 오류 발생")
                     }.also {
-                        updateState(key, ImageState.Failure(it))
+                        updateState(key, ImageResult.Failure(it))
                     }
                 }
             }
@@ -107,20 +130,20 @@ class ListViewModel @Inject constructor(
         }
     }
 
-    fun requestImageSampling(url: String, width: Int, height: Int, id: String) {
+    fun requestImageSampling(url: String, width: Int, height: Int, index: Int) {
         val originKey = KeyGenerator.key(url)
         val key = KeyGenerator.key(url, width, height)
 
         if (jobs[key]?.isActive == true) return
 
         viewModelScope.launch(Dispatchers.IO) {
-            if (isLoading(key)) return@launch
+            if (noNeedToLoad(key)) return@launch
 
-            updateState(key, ImageState.Loading)
+            updateState(key, ImageResult.Loading)
 
             if (memoryCache.isCached(key)) {
                 val bitmap = memoryCache.cachedImage(key)!!.data as Bitmap
-                updateState(key, ImageState.Success(bitmap))
+                updateState(key, ImageResult.Success(bitmap))
                 memoryCache.lruCacheProcess(key, false)
                 diskCache.lruCacheProcess(key, false)
                 return@launch
@@ -133,7 +156,7 @@ class ListViewModel @Inject constructor(
 
             if (diskCache.isCached(key)) {
                 val bitmap = BitmapUtils.decode(filePath)!!
-                updateState(key, ImageState.Success(bitmap))
+                updateState(key, ImageResult.Success(bitmap))
 
                 memoryCache.newCache(key, BitmapCacheObject(bitmap))
                 memoryCache.lruCacheProcess(key, true, bitmap.allocationByteCount.toLong())
@@ -158,14 +181,14 @@ class ListViewModel @Inject constructor(
 
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        updateState(key, ImageState.Failure(e))
+                        updateState(key, ImageResult.Failure(e))
                     }
 
                 } else {
                     result.exceptionOrNull().let {
                         it ?: RuntimeException("알수없는 오류 발생")
                     }.also {
-                        updateState(key, ImageState.Failure(it))
+                        updateState(key, ImageResult.Failure(it))
                     }
                 }
             }
@@ -189,7 +212,7 @@ class ListViewModel @Inject constructor(
 
         yield()
 
-        updateState(key, ImageState.Success(bitmap))
+        updateState(key, ImageResult.Success(bitmap))
 
         memoryCache.newCache(key, BitmapCacheObject(bitmap))
         memoryCache.lruCacheProcess(key, true, bitmap.allocationByteCount.toLong())
@@ -225,7 +248,7 @@ class ListViewModel @Inject constructor(
         downloadUrl: String,
         width: Int = -1,
         height: Int = -1,
-    ): StateFlow<ImageState> {
+    ) {
         val key =
             if (width > 0 && height > 0) KeyGenerator.key(
                 downloadUrl,
@@ -235,73 +258,57 @@ class ListViewModel @Inject constructor(
 
         mutex.withLock {
             keyIndexMap.putOrUpdate(key, index, true)
-        }
+            val curList = imageResultList
+            if (curList.getOrNull(index) == null) {
+                for (i in curList.size until index) {
+                    imageResultList.add(ImageResult.Unknown)
+                }
 
-        return imageStateFlow(key)
+                if (keyImageResultMap[key] == null) {
+                    keyImageResultMap[key] = ImageResult.Waiting
+                }
+                imageResultList.add(keyImageResultMap[key]!!)
+            } else {
+                if (keyImageResultMap[key] == null) {
+                    keyImageResultMap[key] = ImageResult.Waiting
+                }
+                imageResultList[index] = keyImageResultMap[key]!!
+            }
+        }
     }
 
     suspend fun cancelRequest(index: Int, key: String) {
-        jobs[key]?.cancel()
-        jobs[key] = null
-
         mutex.withLock {
             keyIndexMap.putOrUpdate(key, index, false)
             val activeCount = keyIndexMap.getActiveCount(key)
-            //  TODO active가 있는지 체크해서 캔슬 로직 실행
-        }
 
-        removeState(key)
-    }
-
-    private suspend fun imageStateFlow(key: String): MutableStateFlow<ImageState> {
-        return mutex.withLock {
-            var stateFlow = imageStateMap[key]
-
-            if (stateFlow == null) {
-                imageStateMap[key] = MutableStateFlow(ImageState.Waiting)
-                stateFlow = imageStateMap[key]
+            if (activeCount == 0) {
+                keyImageResultMap.remove(key)
+                jobs[key]?.cancel()
+                jobs[key] = null
             }
-            stateFlow!!
+
+            if (imageResultList.getOrNull(index) != null) {
+                imageResultList[index] = ImageResult.Unknown
+            }
         }
     }
 
-    private suspend fun removeState(key: String) {
-        mutex.withLock {
-            imageStateMap.remove(key)
-        }
-    }
-
-    private suspend fun isLoading(key: String): Boolean {
+    private suspend fun noNeedToLoad(key: String): Boolean {
         return mutex.withLock {
-            imageStateMap[key] != null && imageStateMap[key]!!.value is ImageState.Loading
+            val imageResult = keyImageResultMap[key]
+            imageResult != null && (imageResult is ImageResult.Loading || imageResult is ImageResult.Success)
         }
     }
 
-    private suspend fun updateState(key: String, imageState: ImageState) {
+    private suspend fun updateState(key: String, imageResult: ImageResult) {
         mutex.withLock {
+            if (keyImageResultMap[key] != null) {
+                keyImageResultMap[key] = imageResult
+            }
             keyIndexMap.forEachActive(key) { index ->
-                //  TODO 각 state에게 Notify
+                imageResultList[index] = imageResult
             }
-
-            imageStateMap[key]?.emit(imageState)
         }
     }
-
-    private suspend fun getImageState(key: String): MutableStateFlow<ImageState>? {
-        return mutex.withLock {
-            imageStateMap[key]
-        }
-    }
-
-    fun requestImageWithKey(key: String): Bitmap {
-        return BitmapUtils.decode("${diskCache.diskCacheDir}/$key")!!
-    }
-}
-
-@Immutable
-sealed class ImageState {
-    data class Success(val data: Bitmap) : ImageState()
-    data class Failure(val t: Throwable) : ImageState()
-    data object Loading : ImageState()
-    data object Waiting : ImageState()
 }

@@ -7,15 +7,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.io.File
 import java.io.FileOutputStream
+import javax.inject.Inject
 
-
-
-class MockRepository : Repository {
+class MockRepository @Inject constructor() : Repository {
 
     companion object {
         const val mockFileLength = 1024 * 1024 * 200L
     }
-
 
     private val dummyImages = buildList {
         for (i in 0 until 10) {
@@ -25,7 +23,20 @@ class MockRepository : Repository {
                 width = 5000,
                 height = 3000,
                 url = "https://unsplash.com/photos/yC-Yzbqy7PY",
-                downloadUrl = "https://picsum.photos/id/$i/200/300",
+                downloadUrl = "https://picsum.photos/id/0/200/300",
+            ).also {
+                add(it)
+            }
+        }
+
+        for (i in 0 until 10) {
+            Image(
+                id = i.toString(),
+                author = "Alejandro Escamilla",
+                width = 5000,
+                height = 3000,
+                url = "https://unsplash.com/photos/yC-Yzbqy7PY",
+                downloadUrl = "https://picsum.photos/id/10/200/300",
             ).also {
                 add(it)
             }

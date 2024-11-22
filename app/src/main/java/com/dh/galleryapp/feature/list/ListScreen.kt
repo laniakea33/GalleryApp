@@ -18,7 +18,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -41,11 +40,11 @@ import androidx.paging.PagingData
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.dh.galleryapp.core.key.KeyGenerator
-import com.dh.galleryapp.core.model.Image
 import com.dh.galleryapp.core.ui.components.LoadingScreen
 import com.dh.galleryapp.core.ui.components.toPx
+import com.dh.galleryapp.feature.list.model.ImageRequest
+import com.dh.galleryapp.feature.list.model.ImageResult
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 
 private const val columnCount = 2
@@ -56,11 +55,12 @@ fun ListScreen(
     viewModel: ListViewModel = hiltViewModel(),
     onItemClick: (url: String, thumbnailKey: String) -> Unit,
 ) {
-    val images = viewModel.images.collectAsLazyPagingItems()
+    val imageRequestList = viewModel.imageRequestList.collectAsLazyPagingItems()
+    val imageResultList = viewModel.imageResultList
 
     val isLoading by remember {
         derivedStateOf {
-            images.loadState.refresh == LoadState.Loading
+            imageRequestList.loadState.refresh == LoadState.Loading
         }
     }
 
@@ -74,28 +74,29 @@ fun ListScreen(
         val height = itemSize.toPx().toInt()
 
         PreloadImageList(
-            images = images,
+            imageRequestList = imageRequestList,
             itemSize = itemSize,
+            imageResultList = imageResultList,
             modifier = modifier,
             onItemClick = onItemClick,
-            onRequest = {
+            onObserve = { index, downloadUrl ->
+                runBlocking {
+                    viewModel.observe(index, downloadUrl, width, height)
+                }
+            },
+            onRequest = { index, downloadUrl ->
                 viewModel.requestImageSampling(
-                    it.downloadUrl,
+                    downloadUrl,
                     width, height,
-                    id = it.id,
+                    index = index,
                 )
             },
-            onCancel = { index, image ->
+            onCancel = { index, downloadUrl ->
                 runBlocking {
                     viewModel.cancelRequest(
                         index,
-                        KeyGenerator.key(image.downloadUrl, width, height)
+                        KeyGenerator.key(downloadUrl, width, height)
                     )
-                }
-            },
-            onObserve = { index, image ->
-                runBlocking {
-                    viewModel.observe(index, image.downloadUrl, width, height)
                 }
             }
         )
@@ -104,17 +105,14 @@ fun ListScreen(
 
 @Composable
 fun PreloadImageList(
-    images: LazyPagingItems<Image>,
+    imageRequestList: LazyPagingItems<ImageRequest>,
     itemSize: Dp,
+    imageResultList: List<ImageResult>,
     modifier: Modifier = Modifier,
+    onObserve: (index: Int, downloadUrl: String) -> Unit = { _, _ -> },
+    onRequest: (index: Int, downloadUrl: String) -> Unit = { _, _ -> },
+    onCancel: (index: Int, downloadUrl: String) -> Unit = { _, _ -> },
     onItemClick: (url: String, thumbnailKey: String) -> Unit = { _, _ -> },
-    onObserve: (index: Int, image: Image) -> StateFlow<ImageState> = { _, _ ->
-        MutableStateFlow(
-            ImageState.Waiting
-        )
-    },
-    onRequest: (image: Image) -> Unit = {},
-    onCancel: (index: Int, image: Image) -> Unit = { _, _ -> },
 ) {
     Box(modifier = modifier) {
         val lazyGridState = rememberLazyGridState()
@@ -163,7 +161,7 @@ fun PreloadImageList(
 
         val itemCount by remember {
             derivedStateOf {
-                images.itemCount
+                imageRequestList.itemCount
             }
         }
 
@@ -172,12 +170,12 @@ fun PreloadImageList(
         }
 
         LaunchedEffect(recompositionLoadIndex, initialItemLoadCount, itemCount) {
-            if (images.itemCount == 0) return@LaunchedEffect
+            if (imageRequestList.itemCount == 0) return@LaunchedEffect
             if (!firstRequested) {
                 for (index in onePageItemCount until initialItemLoadCount) {
                     if (index in (preloaded + 1)..<itemCount) {
-                        images[index]?.let {
-                            onRequest(it)
+                        imageRequestList[index]?.let {
+                            onRequest(index, it.downloadUrl)
                             preloaded = index
                         }
                     }
@@ -187,8 +185,8 @@ fun PreloadImageList(
             } else {
                 recompositionLoadIndex.forEach { index ->
                     if (index in (preloaded + 1)..<itemCount) {
-                        images[index]?.let {
-                            onRequest(it)
+                        imageRequestList[index]?.let {
+                            onRequest(index, it.downloadUrl)
                             preloaded = index
                         }
                     }
@@ -197,11 +195,12 @@ fun PreloadImageList(
         }
 
         ImageList(
-            modifier = Modifier.fillMaxSize(),
-            lazyGridState = lazyGridState,
-            images = images,
-            onObserve = onObserve,
+            imageRequestList = imageRequestList,
             itemSize = itemSize,
+            imageResultList = imageResultList,
+            lazyGridState = lazyGridState,
+            modifier = Modifier.fillMaxSize(),
+            onObserve = onObserve,
             onRequest = onRequest,
             onCancel = onCancel,
             onItemClick = onItemClick,
@@ -211,18 +210,15 @@ fun PreloadImageList(
 
 @Composable
 private fun ImageList(
-    images: LazyPagingItems<Image>,
+    imageRequestList: LazyPagingItems<ImageRequest>,
     lazyGridState: LazyGridState,
     itemSize: Dp,
+    imageResultList: List<ImageResult>,
     modifier: Modifier = Modifier,
     onItemClick: (url: String, thumbnailKey: String) -> Unit = { _, _ -> },
-    onObserve: (index: Int, image: Image) -> StateFlow<ImageState> = { _, _ ->
-        MutableStateFlow(
-            ImageState.Waiting
-        )
-    },
-    onRequest: (image: Image) -> Unit = {},
-    onCancel: (index: Int, image: Image) -> Unit = { _, _ -> },
+    onObserve: (index: Int, downloadUrl: String) -> Unit = { _, _ -> },
+    onRequest: (index: Int, downloadUrl: String) -> Unit = { _, _ -> },
+    onCancel: (index: Int, downloadUrl: String) -> Unit = { _, _ -> },
 ) {
     val width = itemSize.toPx().toInt()
     val height = itemSize.toPx().toInt()
@@ -233,24 +229,27 @@ private fun ImageList(
         state = lazyGridState,
     ) {
         items(
-            images.itemCount,
+            imageRequestList.itemCount,
         ) { index ->
-            val image = images[index]!!
-
-            val cachedImage by onObserve(index, image)
-                .collectAsState(ImageState.Waiting)
+            val imageRequest = imageRequestList[index]!!
+            val imageResult = imageResultList.getOrNull(index) ?: ImageResult.Unknown
 
             ImageListItem(
-                cachedImage = cachedImage,
+                index = index,
+                imageRequest = imageRequest,
+                imageResult = imageResult,
                 modifier = Modifier
                     .height(itemSize),
-                onRequest = { onRequest(image) },
-                onCancel = { onCancel(index, image) },
+                onObserve = onObserve,
+                onRequest = {
+                    onRequest(index, imageRequest.downloadUrl)
+                },
+                onCancel = { onCancel(index, imageRequest.downloadUrl) },
                 onClick = {
                     onItemClick(
-                        image.downloadUrl,
+                        imageRequest.downloadUrl,
                         KeyGenerator.key(
-                            url = image.downloadUrl,
+                            url = imageRequest.downloadUrl,
                             width = width,
                             height = height,
                         ),
@@ -265,11 +264,12 @@ private fun ImageList(
 @Preview(showBackground = true, backgroundColor = 0xFFFFFFFF, widthDp = 360, heightDp = 640)
 fun ImageListPreview_Waiting() {
     PreloadImageList(
-        images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
+        imageRequestList = MutableStateFlow(PagingData.from(dummyImageRequestList)).collectAsLazyPagingItems(),
         itemSize = 180.dp,
+        imageResultList = dummyImageResultList,
         modifier = Modifier,
         onObserve = { index, image ->
-            MutableStateFlow(ImageState.Waiting)
+            MutableStateFlow(ImageResult.Waiting)
         },
     )
 }
@@ -282,11 +282,12 @@ fun ImageListPreview_Success() {
     val bitmap = BitmapFactory.decodeResource(context.resources, android.R.drawable.ic_dialog_map)
 
     PreloadImageList(
-        images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
+        imageRequestList = MutableStateFlow(PagingData.from(dummyImageRequestList)).collectAsLazyPagingItems(),
         itemSize = 180.dp,
+        imageResultList = dummyImageResultList,
         modifier = Modifier,
         onObserve = { index, image ->
-            MutableStateFlow(ImageState.Success(bitmap!!))
+            MutableStateFlow(ImageResult.Success(bitmap!!))
         },
     )
 }
@@ -295,23 +296,20 @@ fun ImageListPreview_Success() {
 @Preview(showBackground = true, backgroundColor = 0xFFFFFFFF, widthDp = 360, heightDp = 640)
 fun ImageListPreview_Failure() {
     PreloadImageList(
-        images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
+        imageRequestList = MutableStateFlow(PagingData.from(dummyImageRequestList)).collectAsLazyPagingItems(),
         itemSize = 180.dp,
+        imageResultList = dummyImageResultList,
         modifier = Modifier,
         onObserve = { index, image ->
-            MutableStateFlow(ImageState.Failure(RuntimeException("심각한 오류 발생")))
+            MutableStateFlow(ImageResult.Failure(RuntimeException("심각한 오류 발생")))
         },
     )
 }
 
-private val dummyImages = buildList {
+private val dummyImageRequestList = buildList {
     for (i in 0 until 10) {
-        Image(
+        ImageRequest(
             id = i.toString(),
-            author = "Alejandro Escamilla",
-            width = 5000,
-            height = 3000,
-            url = "https://unsplash.com/photos/yC-Yzbqy7PY",
             downloadUrl = "https://picsum.photos/id/$i/200/300",
         ).also {
             add(it)
@@ -319,28 +317,38 @@ private val dummyImages = buildList {
     }
 }
 
+private val dummyImageResultList = buildList {
+    for (i in 0 until 10) {
+        add(ImageResult.Waiting)
+    }
+}
+
 @Composable
 fun ImageListItem(
-    cachedImage: ImageState,
+    index: Int,
+    imageRequest: ImageRequest,
+    imageResult: ImageResult,
     modifier: Modifier = Modifier,
+    onObserve: (index: Int, downloadUrl: String) -> Unit = { _, _ -> },
     onRequest: () -> Unit = {},
     onCancel: () -> Unit = {},
     onClick: () -> Unit,
 ) {
-    LaunchedEffect(cachedImage) {
-        if (cachedImage is ImageState.Waiting) {
+    LaunchedEffect(imageResult) {
+        if (imageResult is ImageResult.Waiting) {
             onRequest()
         }
     }
 
     DisposableEffect(LocalContext.current) {
+        onObserve(index, imageRequest.downloadUrl)
         onDispose {
             onCancel()
         }
     }
 
     ImageListItemContent(
-        cachedImage = cachedImage,
+        imageResult = imageResult,
         modifier = modifier,
         onClick = onClick,
     )
@@ -348,20 +356,20 @@ fun ImageListItem(
 
 @Composable
 private fun ImageListItemContent(
-    cachedImage: ImageState,
+    imageResult: ImageResult,
     modifier: Modifier = Modifier,
     onClick: () -> Unit = {},
 ) {
-    when (cachedImage) {
-        ImageState.Loading, ImageState.Waiting -> {
+    when (imageResult) {
+        ImageResult.Unknown, ImageResult.Loading, ImageResult.Waiting -> {
             LoadingScreen(
                 modifier = modifier,
             )
         }
 
-        is ImageState.Success -> {
+        is ImageResult.Success -> {
             Image(
-                bitmap = (cachedImage as ImageState.Success).data.asImageBitmap(),
+                bitmap = (imageResult as ImageResult.Success).data.asImageBitmap(),
                 contentDescription = null,
                 modifier = modifier.clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -372,9 +380,9 @@ private fun ImageListItemContent(
             )
         }
 
-        is ImageState.Failure -> {
+        is ImageResult.Failure -> {
             Text(
-                text = (cachedImage as ImageState.Failure).t.message ?: "오류 발생",
+                text = (imageResult as ImageResult.Failure).t.message ?: "오류 발생",
                 style = MaterialTheme.typography
                     .headlineMedium,
                 modifier = modifier
