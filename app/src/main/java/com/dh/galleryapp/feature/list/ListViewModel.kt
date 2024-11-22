@@ -61,67 +61,6 @@ class ListViewModel @Inject constructor(
 
     private val mutex = Mutex()
 
-    fun requestImage(url: String) {
-        val key = KeyGenerator.key(url)
-
-        if (jobs[url]?.isActive == true) return
-
-        viewModelScope.launch(Dispatchers.IO) {
-            if (noNeedToLoad(key)) return@launch
-
-            updateImageResult(key, ImageResult.Loading)
-
-            val filePath = "${diskCache.diskCacheDir}/$key"
-
-            yield()
-
-            if (diskCache.isCached(key)) {
-                val bitmap = BitmapUtils.decode(filePath)!!
-
-                updateImageResult(key, ImageResult.Success(bitmap))
-
-                yield()
-
-                diskCache.lruCacheProcess(key, false)
-
-            } else {
-                val result = repository.downloadImage(url, filePath)
-
-                if (result.isSuccess) {
-                    try {
-                        val fileSize = repository.fileLength(filePath)
-
-                        yield()
-
-                        diskCache.lruCacheProcess(key, true, fileSize)
-
-                        val bitmap = BitmapUtils.decode(filePath)!!
-
-                        updateImageResult(key, ImageResult.Success(bitmap))
-
-                        val filePath = "${diskCache.diskCacheDir}/$key"
-                        val sampledFileSize = File(filePath).length()
-
-                        diskCache.lruCacheProcess(key, true, sampledFileSize)
-
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        updateImageResult(key, ImageResult.Failure(e))
-                    }
-
-                } else {
-                    result.exceptionOrNull().let {
-                        it ?: RuntimeException("알수없는 오류 발생")
-                    }.also {
-                        updateImageResult(key, ImageResult.Failure(it))
-                    }
-                }
-            }
-        }.also {
-            jobs[url] = it
-        }
-    }
-
     fun requestImageSampling(url: String, width: Int, height: Int, index: Int) {
         val originKey = KeyGenerator.key(url)
         val key = KeyGenerator.key(url, width, height)

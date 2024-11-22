@@ -3,7 +3,6 @@ package com.dh.galleryapp.ui
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -11,7 +10,6 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.dh.galleryapp.feature.detail.DetailScreen
 import com.dh.galleryapp.feature.list.ListScreen
-import com.dh.galleryapp.feature.list.ListViewModel
 import com.dh.galleryapp.ui.navigation.Navigation
 import com.dh.galleryapp.ui.navigation.argumentThumbnailKey
 import com.dh.galleryapp.ui.navigation.argumentUrl
@@ -19,15 +17,13 @@ import java.net.URLEncoder
 
 @Composable
 fun GalleryApp(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
 ) {
     val navController = rememberNavController()
-    val viewModel: ListViewModel = hiltViewModel()
 
     NavHost(navController, startDestination = Navigation.List.name, modifier = modifier) {
         composable(Navigation.List.name) { backStackEntry ->
             ListScreen(
-                viewModel = viewModel,
                 modifier = Modifier.fillMaxSize(),
                 onItemClick = { url, thumbnailKey ->
                     navController.navigate(
@@ -60,7 +56,6 @@ fun GalleryApp(
             )
 
             DetailScreen(
-                viewModel = viewModel,
                 modifier = Modifier.fillMaxSize(),
                 url = url,
                 thumbnailKey = thumbnailKey,
