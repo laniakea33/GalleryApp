@@ -85,14 +85,17 @@ fun ListScreen(
                     id = it.id,
                 )
             },
-            onCancel = {
+            onCancel = { index, image ->
                 runBlocking {
-                    viewModel.cancelRequest(KeyGenerator.key(it.downloadUrl, width, height))
+                    viewModel.cancelRequest(
+                        index,
+                        KeyGenerator.key(image.downloadUrl, width, height)
+                    )
                 }
             },
-            onObserve = {
+            onObserve = { index, image ->
                 runBlocking {
-                    viewModel.observe(it.downloadUrl, width, height)
+                    viewModel.observe(index, image.downloadUrl, width, height)
                 }
             }
         )
@@ -105,9 +108,13 @@ fun PreloadImageList(
     itemSize: Dp,
     modifier: Modifier = Modifier,
     onItemClick: (url: String, thumbnailKey: String) -> Unit = { _, _ -> },
-    onObserve: (image: Image) -> StateFlow<ImageState> = { _ -> MutableStateFlow(ImageState.Waiting) },
+    onObserve: (index: Int, image: Image) -> StateFlow<ImageState> = { _, _ ->
+        MutableStateFlow(
+            ImageState.Waiting
+        )
+    },
     onRequest: (image: Image) -> Unit = {},
-    onCancel: (image: Image) -> Unit = {},
+    onCancel: (index: Int, image: Image) -> Unit = { _, _ -> },
 ) {
     Box(modifier = modifier) {
         val lazyGridState = rememberLazyGridState()
@@ -209,9 +216,13 @@ private fun ImageList(
     itemSize: Dp,
     modifier: Modifier = Modifier,
     onItemClick: (url: String, thumbnailKey: String) -> Unit = { _, _ -> },
-    onObserve: (image: Image) -> StateFlow<ImageState> = { _ -> MutableStateFlow(ImageState.Waiting) },
+    onObserve: (index: Int, image: Image) -> StateFlow<ImageState> = { _, _ ->
+        MutableStateFlow(
+            ImageState.Waiting
+        )
+    },
     onRequest: (image: Image) -> Unit = {},
-    onCancel: (image: Image) -> Unit = {},
+    onCancel: (index: Int, image: Image) -> Unit = { _, _ -> },
 ) {
     val width = itemSize.toPx().toInt()
     val height = itemSize.toPx().toInt()
@@ -226,7 +237,7 @@ private fun ImageList(
         ) { index ->
             val image = images[index]!!
 
-            val cachedImage by onObserve(image)
+            val cachedImage by onObserve(index, image)
                 .collectAsState(ImageState.Waiting)
 
             ImageListItem(
@@ -234,7 +245,7 @@ private fun ImageList(
                 modifier = Modifier
                     .height(itemSize),
                 onRequest = { onRequest(image) },
-                onCancel = { onCancel(image) },
+                onCancel = { onCancel(index, image) },
                 onClick = {
                     onItemClick(
                         image.downloadUrl,
@@ -257,7 +268,7 @@ fun ImageListPreview_Waiting() {
         images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
         itemSize = 180.dp,
         modifier = Modifier,
-        onObserve = { index ->
+        onObserve = { index, image ->
             MutableStateFlow(ImageState.Waiting)
         },
     )
@@ -274,7 +285,7 @@ fun ImageListPreview_Success() {
         images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
         itemSize = 180.dp,
         modifier = Modifier,
-        onObserve = { index ->
+        onObserve = { index, image ->
             MutableStateFlow(ImageState.Success(bitmap!!))
         },
     )
@@ -287,7 +298,7 @@ fun ImageListPreview_Failure() {
         images = MutableStateFlow(PagingData.from(dummyImages)).collectAsLazyPagingItems(),
         itemSize = 180.dp,
         modifier = Modifier,
-        onObserve = { index ->
+        onObserve = { index, image ->
             MutableStateFlow(ImageState.Failure(RuntimeException("심각한 오류 발생")))
         },
     )

@@ -68,7 +68,6 @@ class DiskCache @Inject constructor(
 
     override suspend fun lruCacheProcess(key: String, isNewData: Boolean, addedSize: Long) {
         mutex.withLock {
-            println("newCache 시작")
             if (isNewData) {
                 diskCacheSize += addedSize
 
@@ -124,7 +123,6 @@ class DiskCache @Inject constructor(
 
     @TestOnly
     fun newCache(key: String) {
-        println("newCache 시작")
         if (!diskCacheKeyList.contains(key)) {
             diskCacheKeyList.add(0, key)
             repository.prependStringToFile(journalFilePath, key)

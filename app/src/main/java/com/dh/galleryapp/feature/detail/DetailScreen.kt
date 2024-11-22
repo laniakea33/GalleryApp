@@ -45,7 +45,8 @@ fun DetailScreen(
             modifier = modifier,
             onObserve = {
                 runBlocking {
-                    viewModel.observe(url)
+                    //  TODO viewModel 분리 작업
+                    viewModel.observe(-1, url)
                 }
             },
             onRequest = {
@@ -53,7 +54,8 @@ fun DetailScreen(
             },
             onCancel = {
                 runBlocking {
-                    viewModel.cancelRequest(url)
+                    //  TODO viewModel 분리 작업
+                    viewModel.cancelRequest(-1, url)
                 }
             }
         )

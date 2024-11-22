@@ -12,6 +12,7 @@ import com.dh.galleryapp.core.cache.disk.DiskCache
 import com.dh.galleryapp.core.cache.memory.MemoryCache
 import com.dh.galleryapp.core.data.repository.Repository
 import com.dh.galleryapp.core.key.KeyGenerator
+import com.dh.galleryapp.feature.list.model.KeyIndexMap
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
@@ -42,6 +43,8 @@ class ListViewModel @Inject constructor(
 
     private var imageStateMap = HashMap<String, MutableStateFlow<ImageState>>()
     private val mutex = Mutex()
+
+    private val keyIndexMap = KeyIndexMap()
 
     fun requestImage(url: String) {
         val key = KeyGenerator.key(url)
@@ -218,6 +221,7 @@ class ListViewModel @Inject constructor(
     }
 
     suspend fun observe(
+        index: Int,
         downloadUrl: String,
         width: Int = -1,
         height: Int = -1,
@@ -229,12 +233,19 @@ class ListViewModel @Inject constructor(
                 height
             ) else KeyGenerator.key(downloadUrl)
 
+        keyIndexMap.putOrUpdate(key, index, true)
+
         return imageStateFlow(key)
     }
 
-    suspend fun cancelRequest(key: String) {
+    suspend fun cancelRequest(index: Int, key: String) {
         jobs[key]?.cancel()
         jobs[key] = null
+
+        keyIndexMap.putOrUpdate(key, index, false)
+        val activeCount = keyIndexMap.getActiveCount(key)
+        //  TODO active가 있는지 체크해서 캔슬 로직 실행
+
         removeState(key)
     }
 
@@ -264,6 +275,10 @@ class ListViewModel @Inject constructor(
 
     private suspend fun updateState(key: String, imageState: ImageState) {
         mutex.withLock {
+            keyIndexMap.forEachActive(key) { index ->
+                //  TODO 각 state에게 Notify
+            }
+
             imageStateMap[key]?.emit(imageState)
         }
     }
