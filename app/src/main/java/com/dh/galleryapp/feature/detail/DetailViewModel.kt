@@ -13,6 +13,7 @@ import com.dh.galleryapp.core.key.KeyGenerator
 import com.dh.galleryapp.feature.list.model.ImageResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -35,7 +36,14 @@ class DetailViewModel @Inject constructor(
     fun requestImage(thumbnailKey: String, url: String) {
         val key = KeyGenerator.key(url)
 
-        viewModelScope.launch(Dispatchers.IO) {
+        val ceh = CoroutineExceptionHandler { c, t ->
+            t.printStackTrace()
+            viewModelScope.launch(Dispatchers.Main) {
+                _imageResult.value = ImageResult.Failure(t)
+            }
+        }
+
+        viewModelScope.launch(Dispatchers.IO + ceh) {
             _imageResult.value = ImageResult.Loading
 
             if (memoryCache.isCached(thumbnailKey)) {

@@ -19,6 +19,7 @@ import com.dh.galleryapp.feature.list.model.ImageRequest
 import com.dh.galleryapp.feature.list.model.ImageResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.map
@@ -67,7 +68,14 @@ class ListViewModel @Inject constructor(
 
         if (jobs[key]?.isActive == true) return
 
-        viewModelScope.launch(Dispatchers.IO) {
+        val ceh = CoroutineExceptionHandler { c, t ->
+            t.printStackTrace()
+            viewModelScope.launch(Dispatchers.Main) {
+                updateImageResult(key, ImageResult.Failure(t))
+            }
+        }
+
+        viewModelScope.launch(Dispatchers.IO + ceh) {
             if (noNeedToLoad(key)) return@launch
 
             updateImageResult(key, ImageResult.Loading)
