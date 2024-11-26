@@ -70,7 +70,7 @@ class ListViewModel @Inject constructor(
 
         val ceh = CoroutineExceptionHandler { c, t ->
             t.printStackTrace()
-            viewModelScope.launch(Dispatchers.Main) {
+            viewModelScope.launch(Dispatchers.IO) {
                 updateImageResult(key, ImageResult.Failure(t))
             }
         }

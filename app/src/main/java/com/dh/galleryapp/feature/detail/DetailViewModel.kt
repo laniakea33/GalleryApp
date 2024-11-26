@@ -38,7 +38,7 @@ class DetailViewModel @Inject constructor(
 
         val ceh = CoroutineExceptionHandler { c, t ->
             t.printStackTrace()
-            viewModelScope.launch(Dispatchers.Main) {
+            viewModelScope.launch(Dispatchers.IO) {
                 _imageResult.value = ImageResult.Failure(t)
             }
         }
