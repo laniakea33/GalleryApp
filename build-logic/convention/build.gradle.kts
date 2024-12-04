@@ -13,19 +13,33 @@ kotlin {
     }
 }
 
-//dependencies {
-//    compileOnly(libs.android.gradlePlugin)
-//    compileOnly(libs.android.tools.common)
-//    compileOnly(libs.compose.gradlePlugin)
-//    compileOnly(libs.kotlin.gradlePlugin)
-//    compileOnly(libs.ksp.gradlePlugin)
-//}
+dependencies {
+    compileOnly(libs.android.gradlePlugin)
+    compileOnly(libs.android.tools.common)
+    compileOnly(libs.kotlin.gradlePlugin)
+    compileOnly(libs.ksp.gradlePlugin)
+}
+
+tasks {
+    validatePlugins {
+        enableStricterValidation = true
+        failOnWarning = true
+    }
+}
 
 gradlePlugin {
     plugins {
         register("androidApplication") {
             id = "galleryapp.android.application"
             implementationClass = "AndroidApplicationConventionPlugin"
+        }
+        register("androidLibrary") {
+            id = "galleryapp.android.library"
+            implementationClass = "AndroidLibraryConventionPlugin"
+        }
+        register("jvmLibrary") {
+            id = "galleryapp.jvm.library"
+            implementationClass = "JvmLibraryConventionPlugin"
         }
     }
 }

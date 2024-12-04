@@ -1,5 +1,12 @@
 [versions]
+# 앱
+projectCompileSdkVersion = "34"
+projectTargetSdkVersion = "34"
+projectMinSdkVersion = "24"
+
+# 디펜던시&플러그인
 agp = "8.7.2"
+androidTools = "31.7.2"
 kotlin = "2.0.21"
 coreKtx = "1.13.1"
 junit = "4.13.2"
@@ -53,6 +60,12 @@ moshi = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
 converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "retrofit" }
 core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "coreKtxVersion" }
 
+# Dependencies of the included build-logic
+android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
+android-tools-common = { group = "com.android.tools", name = "common", version.ref = "androidTools" }
+kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "kspPluginVersion" }
+
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
@@ -64,3 +77,5 @@ jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrai
 
 # Plugins defined by this project
 galleryapp-android-application = { id = "galleryapp.android.application" }
+galleryapp-android-library = { id = "galleryapp.android.library" }
+galleryapp-jvm-library = { id = "galleryapp.jvm.library" }
