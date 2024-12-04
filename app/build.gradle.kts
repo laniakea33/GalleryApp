@@ -64,5 +64,6 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.paging)
 
-    implementation(project(":core:bitmap"))
+    //  프로젝트 내 모듈 참조
+    implementation(projects.core.bitmap)
 }

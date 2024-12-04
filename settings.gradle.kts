@@ -22,5 +22,6 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "GalleryApp"
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 include(":app")
 include(":core:bitmap")
