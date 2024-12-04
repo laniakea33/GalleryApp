@@ -101,7 +101,7 @@ class ListViewModel @Inject constructor(
                 memoryCache.lruCacheProcess(key, true, bitmap.allocationByteCount.toLong())
                 diskCache.lruCacheProcess(key, false)
 
-            } else if (diskCache.isCached(key)) {
+            } else if (diskCache.isCached(originKey)) {
                 onImageDownloaded(orgFilePath, key, false, width, height)
 
             } else {
