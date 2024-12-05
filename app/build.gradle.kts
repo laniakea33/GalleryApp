@@ -38,14 +38,8 @@ dependencies {
     implementation(libs.hilt.android)
 
     //  프로젝트 내 모듈 참조
-    implementation(projects.core.bitmap)
-    implementation(projects.core.bitmapcache)
-    implementation(projects.core.cache)
-    implementation(projects.core.data)
     implementation(projects.core.common)
-    implementation(projects.core.key)
     implementation(projects.core.ui)
-    implementation(projects.core.model)
     implementation(projects.feature.list)
     implementation(projects.feature.detail)
 }
