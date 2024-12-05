@@ -43,15 +43,17 @@ class RepositoryImpl @Inject constructor(
 
     override suspend fun downloadImage(url: String, filePath: String): Result<String> {
         return try {
-            val responseBody = networkDataSource.downloadImage(url)
+            networkDataSource.downloadImage(url = url, filePath = filePath)
+                .use { fileIn ->
+                    val file = File(filePath)
 
-            val file = File(filePath)
-            responseBody.byteStream().use { fileIn ->
-                file.outputStream().use { fileOut ->
-                    fileIn.copyTo(fileOut)
+                    storageDataSource.writeFileOutputStreamToFile(
+                        dirPath = file.parent!!,
+                        fileName = file.name,
+                    ) { fileOut ->
+                        fileIn.copyTo(fileOut)
+                    }
                 }
-            }
-
             Result.success(filePath)
         } catch (e: Exception) {
             Result.failure(e)

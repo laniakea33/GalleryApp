@@ -54,5 +54,9 @@ gradlePlugin {
             id = "galleryapp.android.library.compose"
             implementationClass = "AndroidLibraryComposeConventionPlugin"
         }
+        register("androidFeature") {
+            id = "galleryapp.android.feature"
+            implementationClass = "AndroidFeatureConventionPlugin"
+        }
     }
 }

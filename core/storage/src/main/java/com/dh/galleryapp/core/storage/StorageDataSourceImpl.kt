@@ -115,19 +115,8 @@ class StorageDataSourceImpl @Inject constructor(
         }
 
         val file = File("$dirPath/$fileName")
-        var out: FileOutputStream? = null
-        try {
-            out = FileOutputStream(file)
-            onFileOutputStream(out)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            try {
-                out?.flush()
-                out?.close()
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
+        file.outputStream().use {
+            onFileOutputStream(it)
         }
     }
 }

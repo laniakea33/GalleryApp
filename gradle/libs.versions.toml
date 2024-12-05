@@ -85,3 +85,4 @@ galleryapp-jvm-library = { id = "galleryapp.jvm.library" }
 galleryapp-hilt = { id = "galleryapp.hilt" }
 galleryapp-android-application-compose = { id = "galleryapp.android.application.compose" }
 galleryapp-android-library-compose = { id = "galleryapp.android.library.compose" }
+galleryapp-android-feature = { id = "galleryapp.android.feature" }

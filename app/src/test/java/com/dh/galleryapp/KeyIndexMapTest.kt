@@ -1,7 +1,7 @@
 package com.dh.galleryapp
 
 import com.dh.galleryapp.feature.list.keystatusmap.KeyIndexMap
-import com.dh.galleryapp.feature.list.model.UiIndex
+import com.dh.galleryapp.feature.list.keystatusmap.UiIndex
 import org.junit.Test
 
 class KeyIndexMapTest {

@@ -21,24 +21,8 @@ android {
 }
 
 dependencies {
-    //  Compose
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.material3)
-    debugImplementation(libs.androidx.compose.ui.tooling.preview)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    androidTestImplementation(libs.androidx.compose.ui.test.junit4)
-    androidTestImplementation(libs.androidx.compose.ui.test.manifest)
-
-    //  Acvitity Compose
-    implementation(libs.androidx.activity.compose)
     //  Hilt Compose
     implementation(libs.androidx.hilt.navigation.compose)
-    // ViewModel Compose
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    //  Paging Compose
-    implementation(libs.androidx.paging.compose)
 
     //  AndroidX
     implementation(libs.androidx.core.ktx)
@@ -53,16 +37,15 @@ dependencies {
     ksp(libs.androidx.hilt.compiler)
     implementation(libs.hilt.android)
 
-    //  Junit
-    testImplementation(libs.junit)
-
     //  프로젝트 내 모듈 참조
     implementation(projects.core.bitmap)
     implementation(projects.core.bitmapcache)
     implementation(projects.core.cache)
     implementation(projects.core.data)
-    implementation(projects.core.model)
     implementation(projects.core.common)
     implementation(projects.core.key)
     implementation(projects.core.ui)
+    implementation(projects.core.model)
+    implementation(projects.feature.list)
+    implementation(projects.feature.detail)
 }

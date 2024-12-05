@@ -8,7 +8,6 @@ android {
 }
 
 dependencies {
-    implementation(libs.retrofit)
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.common)
 
