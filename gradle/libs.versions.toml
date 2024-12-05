@@ -5,87 +5,80 @@ projectTargetSdkVersion = "34"
 projectMinSdkVersion = "24"
 
 # 디펜던시&플러그인
-agp = "8.7.2"
-androidTools = "31.7.2"
+androidGradlePlugin = "8.7.2"
+androidToolsCommon = "31.7.2"
 kotlin = "2.0.21"
-coreKtx = "1.13.1"
-junit = "4.13.2"
 androidxJunit = "1.2.1"
-espressoCore = "3.6.1"
-lifecycleRuntimeKtx = "2.8.7"
-activityCompose = "1.9.3"
-composeBom = "2024.04.01"
-kspPluginVersion = '2.0.21-1.0.26'
-hiltVersion = "2.52"
+androidxEspressoCore = "3.6.1"
+androidxLifecycleRuntimeKtx = "2.8.7"
+androidxActivityCompose = "1.9.3"
+androidxComposeBom = "2024.04.01"
 androidxHiltCompiler = "1.2.0"
-androidxHiltNavigationComposeVersion = "1.2.0"
+androidxHiltNavigationCompose = "1.2.0"
+androidxRoom = "2.6.1"
+androidxLifecycleVersion = "2.8.1"
+androidxTestCoreKtx = "1.6.1"
+androidxCoreKtx = "1.13.1"
+junit = "4.13.2"
+ksp = '2.0.21-1.0.26'
+hilt = "2.52"
 moshi = "1.13.0"
 paging = "3.3.2"
 retrofit = "2.11.0"
-roomVersion = "2.6.1"
-lifecycleVersion = "2.8.1"
-coreKtxVersion = "1.6.1"
-jetbrainsKotlinJvm = "2.0.21"
-appcompat = "1.7.0"
-material = "1.12.0"
-appcompatVersion = "1.7.0"
-materialVersion = "1.12.0"
 
 [libraries]
-androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "androidxCoreKtx" }
 androidx-paging-common = { module = "androidx.paging:paging-common", version.ref = "paging" }
 androidx-paging-compose = { module = "androidx.paging:paging-compose", version.ref = "paging" }
 androidx-paging-runtime = { module = "androidx.paging:paging-runtime", version.ref = "paging" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxJunit" }
-androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espressoCore" }
-androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
-androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
-androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
-androidx-ui = { group = "androidx.compose.ui", name = "ui" }
-androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
-androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
-androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
-androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
-androidx-material3 = { group = "androidx.compose.material3", name = "material3" }
-hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hiltVersion" }
-hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hiltVersion" }
-hilt-core = { group = "com.google.dagger", name = "hilt-core", version.ref = "hiltVersion" }
-androidx-hilt-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "androidxHiltCompiler" }
-androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "androidxHiltNavigationComposeVersion" }
-androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomVersion" }
-androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomVersion" }
-androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomVersion" }
-androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "roomVersion" }
-retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
-androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleVersion" }
-androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "lifecycleVersion" }
-moshi = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
-converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "retrofit" }
-core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "coreKtxVersion" }
+androidx-espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "androidxEspressoCore" }
+androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "androidxLifecycleRuntimeKtx" }
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "androidxActivityCompose" }
 
-# Dependencies of the included build-logic
-android-gradlePlugin = { group = "com.android.tools.build", name = "gradle", version.ref = "agp" }
-android-tools-common = { group = "com.android.tools", name = "common", version.ref = "androidTools" }
-kotlin-gradlePlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
-ksp-gradlePlugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "kspPluginVersion" }
-compose-gradlePlugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
-androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompatVersion" }
-material = { group = "com.google.android.material", name = "material", version.ref = "materialVersion" }
-#room-gradlePlugin = { group = "androidx.room", name = "room-gradle-plugin", version.ref = "roomVersion" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "androidxComposeBom" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-compose-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
+androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+hilt-android = { module = "com.google.dagger:hilt-android", version.ref = "hilt" }
+hilt-compiler = { module = "com.google.dagger:hilt-compiler", version.ref = "hilt" }
+hilt-core = { group = "com.google.dagger", name = "hilt-core", version.ref = "hilt" }
+androidx-hilt-compiler = { module = "androidx.hilt:hilt-compiler", version.ref = "androidxHiltCompiler" }
+androidx-hilt-navigation-compose = { module = "androidx.hilt:hilt-navigation-compose", version.ref = "androidxHiltNavigationCompose" }
+androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "androidxRoom" }
+androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "androidxRoom" }
+androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "androidxRoom" }
+androidx-room-paging = { module = "androidx.room:room-paging", version.ref = "androidxRoom" }
+retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
+androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidxLifecycleVersion" }
+androidx-lifecycle-viewmodel-ktx = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "androidxLifecycleVersion" }
+moshi = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshi" }
+retrofit-converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "retrofit" }
+androidx-test-core-ktx = { group = "androidx.test", name = "core-ktx", version.ref = "androidxTestCoreKtx" }
+
+# build-logic에 포함된 의존성
+android-gradle-plugin = { group = "com.android.tools.build", name = "gradle", version.ref = "androidGradlePlugin" }
+android-tools-common = { group = "com.android.tools", name = "common", version.ref = "androidToolsCommon" }
+kotlin-gradle-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+compose-gradle-plugin = { module = "org.jetbrains.kotlin:compose-compiler-gradle-plugin", version.ref = "kotlin" }
+ksp-gradle-plugin = { group = "com.google.devtools.ksp", name = "com.google.devtools.ksp.gradle.plugin", version.ref = "ksp" }
 
 [plugins]
-android-application = { id = "com.android.application", version.ref = "agp" }
+android-application = { id = "com.android.application", version.ref = "androidGradlePlugin" }
+android-library = { id = "com.android.library", version.ref = "androidGradlePlugin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hiltVersion" }
-ksp = { id = "com.google.devtools.ksp", version.ref = "kspPluginVersion" }
-android-library = { id = "com.android.library", version.ref = "agp" }
-jetbrains-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "jetbrainsKotlinJvm" }
-androidx-room = { id = "androidx.room", version.ref = "roomVersion" }
+kotlin-plugin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+hilt-android = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
+ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
+androidx-room = { id = "androidx.room", version.ref = "androidxRoom" }
 
-# Plugins defined by this project
+# 프로젝트 내에서 생성된 플러그인
 galleryapp-android-application = { id = "galleryapp.android.application" }
 galleryapp-android-library = { id = "galleryapp.android.library" }
 galleryapp-jvm-library = { id = "galleryapp.jvm.library" }

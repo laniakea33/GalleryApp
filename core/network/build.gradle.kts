@@ -10,7 +10,7 @@ android {
 dependencies {
     implementation(libs.retrofit)
     implementation(libs.moshi)
-    implementation(libs.converter.moshi)
+    implementation(libs.retrofit.converter.moshi)
 
     implementation(projects.core.model)
 }

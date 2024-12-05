@@ -14,12 +14,11 @@ kotlin {
 }
 
 dependencies {
-    compileOnly(libs.android.gradlePlugin)
+    compileOnly(libs.android.gradle.plugin)
     compileOnly(libs.android.tools.common)
-    compileOnly(libs.kotlin.gradlePlugin)
-    compileOnly(libs.ksp.gradlePlugin)
-    compileOnly(libs.compose.gradlePlugin)
-//    compileOnly(libs.room.gradlePlugin)
+    compileOnly(libs.kotlin.gradle.plugin)
+    compileOnly(libs.ksp.gradle.plugin)
+    compileOnly(libs.compose.gradle.plugin)
 }
 
 tasks {

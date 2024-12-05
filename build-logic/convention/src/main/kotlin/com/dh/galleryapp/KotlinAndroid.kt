@@ -31,7 +31,6 @@ internal fun Project.configureKotlinAndroid(
     dependencies {
         add("androidTestImplementation", libs.findLibrary("androidx.junit").get())
         add("androidTestImplementation", libs.findLibrary("androidx.espresso.core").get())
-        add("androidTestImplementation", libs.findLibrary("androidx.ui.test.junit4").get())
     }
 
     configureKotlin()
