@@ -5,6 +5,7 @@ import org.gradle.api.JavaVersion
 import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.kotlin.dsl.configure
+import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.withType
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
@@ -27,6 +28,12 @@ internal fun Project.configureKotlinAndroid(
         }
     }
 
+    dependencies {
+        add("androidTestImplementation", libs.findLibrary("androidx.junit").get())
+        add("androidTestImplementation", libs.findLibrary("androidx.espresso.core").get())
+        add("androidTestImplementation", libs.findLibrary("androidx.ui.test.junit4").get())
+    }
+
     configureKotlin()
 }
 
@@ -39,10 +46,15 @@ internal fun Project.configureKotlinJvm() {
     configureKotlin()
 }
 
+//  모든 타입의 모듈에 공통 적용됨.
 private fun Project.configureKotlin() {
     tasks.withType<KotlinCompile>().configureEach {
         kotlinOptions {
             jvmTarget = JavaVersion.VERSION_17.toString()
         }
+    }
+
+    dependencies {
+        add("testImplementation", libs.findLibrary("junit").get())
     }
 }
