@@ -34,7 +34,7 @@ class DetailViewModel @Inject constructor(
     val imageResult: StateFlow<ImageResult> = _imageResult
 
     fun requestImage(thumbnailKey: String, url: String) {
-        val key = KeyGenerator.key(url)
+        val key = com.dh.galleryapp.core.key.KeyGenerator.key(url)
 
         val ceh = CoroutineExceptionHandler { c, t ->
             t.printStackTrace()

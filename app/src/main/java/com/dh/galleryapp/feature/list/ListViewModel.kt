@@ -63,8 +63,8 @@ class ListViewModel @Inject constructor(
     private val mutex = Mutex()
 
     fun requestImageSampling(url: String, width: Int, height: Int, index: Int) {
-        val originKey = KeyGenerator.key(url)
-        val key = KeyGenerator.key(url, width, height)
+        val originKey = com.dh.galleryapp.core.key.KeyGenerator.key(url)
+        val key = com.dh.galleryapp.core.key.KeyGenerator.key(url, width, height)
 
         if (jobs[key]?.isActive == true) return
 
@@ -189,11 +189,11 @@ class ListViewModel @Inject constructor(
         height: Int = -1,
     ) {
         val key =
-            if (width > 0 && height > 0) KeyGenerator.key(
+            if (width > 0 && height > 0) com.dh.galleryapp.core.key.KeyGenerator.key(
                 downloadUrl,
                 width,
                 height
-            ) else KeyGenerator.key(downloadUrl)
+            ) else com.dh.galleryapp.core.key.KeyGenerator.key(downloadUrl)
 
         mutex.withLock {
             keyResultNotifier.observe(key, index)

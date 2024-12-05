@@ -1,8 +1,7 @@
 plugins {
     alias(libs.plugins.galleryapp.android.application)
-    alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.hilt.android)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.galleryapp.hilt)
+    alias(libs.plugins.galleryapp.android.application.compose)
 }
 
 android {
@@ -16,16 +15,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
             signingConfig = signingConfigs.getByName("debug")
         }
-    }
-    buildFeatures {
-        compose = true
     }
 }
 
@@ -51,19 +42,22 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-    implementation(libs.retrofit)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.moshi)
     implementation(libs.converter.moshi)
-    implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
-    testImplementation(libs.androidx.paging.common)
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
-    implementation(libs.androidx.room.paging)
 
     //  프로젝트 내 모듈 참조
     implementation(projects.core.bitmap)
+    implementation(projects.core.bitmapcache)
+    implementation(projects.core.cache)
+    implementation(projects.core.data)
+    implementation(projects.core.model)
+    implementation(projects.core.common)
+    implementation(projects.core.key)
+    implementation(projects.core.ui)
 }

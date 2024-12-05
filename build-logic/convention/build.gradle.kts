@@ -18,6 +18,8 @@ dependencies {
     compileOnly(libs.android.tools.common)
     compileOnly(libs.kotlin.gradlePlugin)
     compileOnly(libs.ksp.gradlePlugin)
+    compileOnly(libs.compose.gradlePlugin)
+//    compileOnly(libs.room.gradlePlugin)
 }
 
 tasks {
@@ -40,6 +42,18 @@ gradlePlugin {
         register("jvmLibrary") {
             id = "galleryapp.jvm.library"
             implementationClass = "JvmLibraryConventionPlugin"
+        }
+        register("hilt") {
+            id = "galleryapp.hilt"
+            implementationClass = "HiltConventionPlugin"
+        }
+        register("androidApplicationCompose") {
+            id = "galleryapp.android.application.compose"
+            implementationClass = "AndroidApplicationComposeConventionPlugin"
+        }
+        register("androidLibraryCompose") {
+            id = "galleryapp.android.library.compose"
+            implementationClass = "AndroidLibraryComposeConventionPlugin"
         }
     }
 }

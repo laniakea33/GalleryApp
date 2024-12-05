@@ -4,8 +4,4 @@ plugins {
 
 android {
     namespace = "com.dh.galleryapp.core.bitmap"
-
-    defaultConfig {
-        consumerProguardFiles("consumer-rules.pro")
-    }
 }

@@ -95,7 +95,7 @@ fun ListScreen(
                 runBlocking {
                     viewModel.dispose(
                         index,
-                        KeyGenerator.key(downloadUrl, width, height)
+                        com.dh.galleryapp.core.key.KeyGenerator.key(downloadUrl, width, height)
                     )
                 }
             }
@@ -248,7 +248,7 @@ private fun ImageList(
                 onClick = {
                     onItemClick(
                         imageRequest.downloadUrl,
-                        KeyGenerator.key(
+                        com.dh.galleryapp.core.key.KeyGenerator.key(
                             url = imageRequest.downloadUrl,
                             width = width,
                             height = height,
