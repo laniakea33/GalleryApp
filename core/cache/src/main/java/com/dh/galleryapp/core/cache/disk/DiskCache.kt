@@ -1,8 +1,8 @@
 package com.dh.galleryapp.core.cache.disk
 
 import com.dh.galleryapp.core.cache.Cache
-import com.dh.galleryapp.core.data.di.Real
-import com.dh.galleryapp.core.data.repository.Repository
+import com.dh.galleryapp.core.domain.repository.Repository
+import com.dh.galleryapp.core.domain.repository.di.Real
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jetbrains.annotations.TestOnly

@@ -10,8 +10,9 @@ import com.dh.galleryapp.core.bitmap.BitmapUtils
 import com.dh.galleryapp.core.bitmapcache.BitmapCacheObject
 import com.dh.galleryapp.core.cache.disk.DiskCache
 import com.dh.galleryapp.core.cache.memory.MemoryCache
-import com.dh.galleryapp.core.data.di.Real
-import com.dh.galleryapp.core.data.repository.Repository
+import com.dh.galleryapp.core.domain.GetImageListUseCase
+import com.dh.galleryapp.core.domain.repository.Repository
+import com.dh.galleryapp.core.domain.repository.di.Real
 import com.dh.galleryapp.core.key.KeyGenerator
 import com.dh.galleryapp.feature.list.keystatusmap.KeyResultNotifier
 import com.dh.galleryapp.feature.list.mapper.toImageRequest
@@ -30,13 +31,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ListViewModel @Inject constructor(
+    getImageListUseCase: GetImageListUseCase,
     @Real private val repository: Repository,
     private val memoryCache: MemoryCache,
     private val diskCache: DiskCache,
 ) : ViewModel() {
 
     //  이미지 요청 데이터 목록
-    val imageRequestList = repository.loadImageList()
+    val imageRequestList = getImageListUseCase()
         .map { pagingData ->
             pagingData.map {
                 it.toImageRequest()

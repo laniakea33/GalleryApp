@@ -15,6 +15,7 @@ dependencies {
     implementation(libs.androidx.paging.compose)
 
     implementation(projects.core.model)
+    implementation(projects.core.domain)
     implementation(projects.core.cache)
     implementation(projects.core.data)
     implementation(projects.core.bitmap)

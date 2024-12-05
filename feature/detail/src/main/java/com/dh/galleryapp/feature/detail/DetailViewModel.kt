@@ -6,8 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.dh.galleryapp.core.bitmap.BitmapUtils
 import com.dh.galleryapp.core.cache.disk.DiskCache
 import com.dh.galleryapp.core.cache.memory.MemoryCache
-import com.dh.galleryapp.core.data.di.Real
-import com.dh.galleryapp.core.data.repository.Repository
+import com.dh.galleryapp.core.domain.repository.Repository
+import com.dh.galleryapp.core.domain.repository.di.Real
 import com.dh.galleryapp.core.key.KeyGenerator
 import com.dh.galleryapp.feature.model.ImageResult
 import dagger.hilt.android.lifecycle.HiltViewModel

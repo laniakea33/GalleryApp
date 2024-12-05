@@ -1,7 +1,6 @@
 package com.dh.galleryapp.core.data.repository.mock
 
 import androidx.paging.PagingData
-import com.dh.galleryapp.core.data.repository.Repository
 import com.dh.galleryapp.core.model.Image
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,7 +8,7 @@ import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
 
-class MockRepository @Inject constructor() : Repository {
+class MockRepository @Inject constructor() : com.dh.galleryapp.core.domain.repository.Repository {
 
     companion object {
         const val mockFileLength = 1024 * 1024 * 200L

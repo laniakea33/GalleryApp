@@ -1,4 +1,4 @@
-package com.dh.galleryapp.core.data.repository
+package com.dh.galleryapp.core.domain.repository
 
 import androidx.paging.PagingData
 import com.dh.galleryapp.core.model.Image
@@ -24,6 +24,6 @@ interface Repository {
     fun writeFileOutputStreamToFile(
         dirPath: String,
         fileName: String,
-        onFileOutputStream: (FileOutputStream) -> Unit
+        onFileOutputStream: (FileOutputStream) -> Unit,
     )
 }
