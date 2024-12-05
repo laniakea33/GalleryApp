@@ -16,6 +16,4 @@ dependencies {
     implementation(libs.androidx.room.ktx)
 
     implementation(libs.androidx.room.paging)
-
-    implementation(projects.core.model)
 }

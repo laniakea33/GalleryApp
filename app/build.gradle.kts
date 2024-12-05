@@ -38,7 +38,7 @@ dependencies {
     implementation(libs.hilt.android)
 
     //  프로젝트 내 모듈 참조
-    implementation(projects.core.common)
+    implementation(projects.core.serialization)
     implementation(projects.core.ui)
     implementation(projects.feature.list)
     implementation(projects.feature.detail)

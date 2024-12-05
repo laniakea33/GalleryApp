@@ -29,12 +29,12 @@
             <option value="$PROJECT_DIR$/core/bitmap" />
             <option value="$PROJECT_DIR$/core/bitmapcache" />
             <option value="$PROJECT_DIR$/core/cache" />
-            <option value="$PROJECT_DIR$/core/common" />
             <option value="$PROJECT_DIR$/core/data" />
             <option value="$PROJECT_DIR$/core/database" />
             <option value="$PROJECT_DIR$/core/key" />
             <option value="$PROJECT_DIR$/core/model" />
             <option value="$PROJECT_DIR$/core/network" />
+            <option value="$PROJECT_DIR$/core/serialization" />
             <option value="$PROJECT_DIR$/core/storage" />
             <option value="$PROJECT_DIR$/core/ui" />
             <option value="$PROJECT_DIR$/feature" />
