@@ -1,4 +1,4 @@
-package com.dh.galleryapp.core.network.di
+package com.dh.galleryapp.core.di
 
 import com.dh.galleryapp.core.network.NetworkDataSource
 import com.dh.galleryapp.core.network.NetworkDataSourceImpl

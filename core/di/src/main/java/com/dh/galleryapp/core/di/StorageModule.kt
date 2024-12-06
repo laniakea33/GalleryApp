@@ -1,4 +1,4 @@
-package com.dh.galleryapp.core.storage.di
+package com.dh.galleryapp.core.di
 
 import com.dh.galleryapp.core.storage.StorageDataSource
 import com.dh.galleryapp.core.storage.StorageDataSourceImpl

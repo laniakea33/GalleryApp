@@ -1,4 +1,4 @@
-package com.dh.galleryapp.core.database.di
+package com.dh.galleryapp.core.di
 
 import android.content.Context
 import com.dh.galleryapp.core.database.ImageDao

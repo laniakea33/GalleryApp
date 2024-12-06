@@ -1,4 +1,4 @@
-package com.dh.galleryapp.core.cache.di
+package com.dh.galleryapp.core.di
 
 import android.content.Context
 import dagger.Module

@@ -1,4 +1,4 @@
-package com.dh.galleryapp.core.common.serialization.di
+package com.dh.galleryapp.core.di
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
