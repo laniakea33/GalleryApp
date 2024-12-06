@@ -25,7 +25,6 @@ rootProject.name = "GalleryApp"
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
 include(":app")
 include(":core:bitmap")
-include(":core:bitmapcache")
 include(":core:cache")
 include(":core:data")
 include(":core:domain")

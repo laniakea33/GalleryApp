@@ -13,7 +13,6 @@ dependencies {
     implementation(projects.core.model)
     implementation(projects.core.domain)
     implementation(projects.core.bitmap)
-    implementation(projects.core.bitmapcache)
     implementation(projects.core.key)
     implementation(projects.feature.model)
 }

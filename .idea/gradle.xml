@@ -27,7 +27,6 @@
             <option value="$PROJECT_DIR$/build-logic/convention" />
             <option value="$PROJECT_DIR$/core" />
             <option value="$PROJECT_DIR$/core/bitmap" />
-            <option value="$PROJECT_DIR$/core/bitmapcache" />
             <option value="$PROJECT_DIR$/core/cache" />
             <option value="$PROJECT_DIR$/core/data" />
             <option value="$PROJECT_DIR$/core/database" />
