@@ -22,7 +22,6 @@ import com.dh.galleryapp.core.storage.StorageDataSource
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.yield
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
@@ -74,8 +73,6 @@ class RepositoryImpl @Inject constructor(
             val orgFilePath = "${diskCache.diskCacheDir}/$originKey"
             val filePath = "${diskCache.diskCacheDir}/$key"
 
-            yield()
-
             if (diskCache.isCached(key)) {
                 val bitmap = BitmapUtils.decode(filePath)!!
                 emit(ThumbnailImageResult.Success(bitmap))
@@ -88,12 +85,8 @@ class RepositoryImpl @Inject constructor(
                 val bitmap = BitmapUtils.decodeSample(orgFilePath, width, height)!!
                 emit(ThumbnailImageResult.Success(bitmap))
 
-                yield()
-
                 memoryCache.newCache(key, bitmap)
                 memoryCache.lruCacheProcess(key, true, bitmap.allocationByteCount.toLong())
-
-                yield()
 
                 diskCache.saveFileOutputStreamToDiskCache(
                     key,
@@ -114,17 +107,11 @@ class RepositoryImpl @Inject constructor(
 
                         diskCache.lruCacheProcess(originKey, true, fileSize)
 
-                        yield()
-
                         val bitmap = BitmapUtils.decodeSample(orgFilePath, width, height)!!
                         emit(ThumbnailImageResult.Success(bitmap))
 
-                        yield()
-
                         memoryCache.newCache(key, bitmap)
                         memoryCache.lruCacheProcess(key, true, bitmap.allocationByteCount.toLong())
-
-                        yield()
 
                         diskCache.saveFileOutputStreamToDiskCache(
                             key,
@@ -167,14 +154,10 @@ class RepositoryImpl @Inject constructor(
 
             val filePath = "${diskCache.diskCacheDir}/$key"
 
-            yield()
-
             if (diskCache.isCached(key)) {
                 val bitmap = BitmapUtils.decode(filePath)!!
 
                 emit(OriginalImageResult.Success(bitmap))
-
-                yield()
 
                 diskCache.lruCacheProcess(key, false)
 
@@ -183,8 +166,6 @@ class RepositoryImpl @Inject constructor(
 
                 if (result.isSuccess) {
                     try {
-                        yield()
-
                         val bitmap = BitmapUtils.decode(filePath)!!
 
                         emit(OriginalImageResult.Success(bitmap))
