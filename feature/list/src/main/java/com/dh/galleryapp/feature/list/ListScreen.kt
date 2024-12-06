@@ -41,6 +41,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.dh.galleryapp.core.ui.components.LoadingScreen
 import com.dh.galleryapp.core.ui.components.toPx
+import com.dh.galleryapp.feature.key.KeyGenerator
 import com.dh.galleryapp.feature.model.ImageResult.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
@@ -92,7 +93,7 @@ fun ListScreen(
                 runBlocking {
                     viewModel.dispose(
                         index,
-                        com.dh.galleryapp.core.key.KeyGenerator.key(downloadUrl, width, height)
+                        KeyGenerator.key(downloadUrl, width, height)
                     )
                 }
             }
@@ -246,7 +247,7 @@ private fun ImageList(
                 onClick = {
                     onItemClick(
                         imageRequest.downloadUrl,
-                        com.dh.galleryapp.core.key.KeyGenerator.key(
+                        KeyGenerator.key(
                             url = imageRequest.downloadUrl,
                             width = width,
                             height = height,

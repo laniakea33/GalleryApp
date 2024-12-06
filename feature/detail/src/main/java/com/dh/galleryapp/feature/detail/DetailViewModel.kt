@@ -5,7 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dh.galleryapp.core.domain.GetOriginalImageUseCase
 import com.dh.galleryapp.core.domain.OriginalImageResult
-import com.dh.galleryapp.core.key.KeyGenerator
+import com.dh.galleryapp.feature.key.KeyGenerator
 import com.dh.galleryapp.feature.model.ImageResult
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineExceptionHandler

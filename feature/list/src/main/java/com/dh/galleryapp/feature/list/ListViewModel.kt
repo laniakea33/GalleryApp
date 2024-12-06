@@ -9,7 +9,7 @@ import androidx.paging.map
 import com.dh.galleryapp.core.domain.GetImageListUseCase
 import com.dh.galleryapp.core.domain.GetThumbnailImageUseCase
 import com.dh.galleryapp.core.domain.ThumbnailImageResult
-import com.dh.galleryapp.core.key.KeyGenerator
+import com.dh.galleryapp.feature.key.KeyGenerator
 import com.dh.galleryapp.feature.list.keystatusmap.KeyResultNotifier
 import com.dh.galleryapp.feature.list.mapper.toImageRequest
 import com.dh.galleryapp.feature.model.ImageResult

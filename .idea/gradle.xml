@@ -39,6 +39,7 @@
             <option value="$PROJECT_DIR$/core/ui" />
             <option value="$PROJECT_DIR$/feature" />
             <option value="$PROJECT_DIR$/feature/detail" />
+            <option value="$PROJECT_DIR$/feature/key" />
             <option value="$PROJECT_DIR$/feature/list" />
             <option value="$PROJECT_DIR$/feature/model" />
           </set>
