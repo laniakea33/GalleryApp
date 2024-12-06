@@ -41,8 +41,7 @@ import androidx.paging.compose.LazyPagingItems
 import androidx.paging.compose.collectAsLazyPagingItems
 import com.dh.galleryapp.core.ui.components.LoadingScreen
 import com.dh.galleryapp.core.ui.components.toPx
-import com.dh.galleryapp.feature.model.ImageRequest
-import com.dh.galleryapp.feature.model.ImageResult
+import com.dh.galleryapp.feature.model.ImageResult.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 
@@ -87,7 +86,6 @@ fun ListScreen(
                 viewModel.requestImageSampling(
                     downloadUrl,
                     width, height,
-                    index = index,
                 )
             },
             onCancel = { index, downloadUrl ->
@@ -231,7 +229,8 @@ private fun ImageList(
             imageRequestList.itemCount,
         ) { index ->
             val imageRequest = imageRequestList[index]!!
-            val imageResult = imageResultList.getOrNull(index) ?: com.dh.galleryapp.feature.model.ImageResult.Unknown
+            val imageResult = imageResultList.getOrNull(index)
+                ?: Unknown
 
             ImageListItem(
                 index = index,
@@ -268,7 +267,7 @@ fun ImageListPreview_Waiting() {
         imageResultList = dummyImageResultList,
         modifier = Modifier,
         onObserve = { index, image ->
-            MutableStateFlow(com.dh.galleryapp.feature.model.ImageResult.Waiting)
+            MutableStateFlow(Waiting)
         },
     )
 }
@@ -286,7 +285,7 @@ fun ImageListPreview_Success() {
         imageResultList = dummyImageResultList,
         modifier = Modifier,
         onObserve = { index, image ->
-            MutableStateFlow(com.dh.galleryapp.feature.model.ImageResult.Success(bitmap!!))
+            MutableStateFlow(Success(bitmap!!))
         },
     )
 }
@@ -300,7 +299,7 @@ fun ImageListPreview_Failure() {
         imageResultList = dummyImageResultList,
         modifier = Modifier,
         onObserve = { index, image ->
-            MutableStateFlow(com.dh.galleryapp.feature.model.ImageResult.Failure(RuntimeException("심각한 오류 발생")))
+            MutableStateFlow(Failure(RuntimeException("심각한 오류 발생")))
         },
     )
 }
@@ -318,7 +317,7 @@ private val dummyImageRequestList = buildList {
 
 private val dummyImageResultList = buildList {
     for (i in 0 until 10) {
-        add(com.dh.galleryapp.feature.model.ImageResult.Waiting)
+        add(Waiting)
     }
 }
 
@@ -334,7 +333,7 @@ fun ImageListItem(
     onClick: () -> Unit,
 ) {
     LaunchedEffect(imageResult) {
-        if (imageResult is com.dh.galleryapp.feature.model.ImageResult.Waiting) {
+        if (imageResult is Waiting) {
             onRequest()
         }
     }
@@ -360,15 +359,15 @@ private fun ImageListItemContent(
     onClick: () -> Unit = {},
 ) {
     when (imageResult) {
-        com.dh.galleryapp.feature.model.ImageResult.Unknown, com.dh.galleryapp.feature.model.ImageResult.Loading, com.dh.galleryapp.feature.model.ImageResult.Waiting -> {
+        Unknown, Loading, Waiting -> {
             LoadingScreen(
                 modifier = modifier,
             )
         }
 
-        is com.dh.galleryapp.feature.model.ImageResult.Success -> {
+        is Success -> {
             Image(
-                bitmap = (imageResult as com.dh.galleryapp.feature.model.ImageResult.Success).data.asImageBitmap(),
+                bitmap = (imageResult as Success).data.asImageBitmap(),
                 contentDescription = null,
                 modifier = modifier.clickable(
                     interactionSource = remember { MutableInteractionSource() },
@@ -379,9 +378,10 @@ private fun ImageListItemContent(
             )
         }
 
-        is com.dh.galleryapp.feature.model.ImageResult.Failure -> {
+        is Failure -> {
             Text(
-                text = (imageResult as com.dh.galleryapp.feature.model.ImageResult.Failure).t.message ?: "오류 발생",
+                text = (imageResult as Failure).t.message
+                    ?: "오류 발생",
                 style = MaterialTheme.typography
                     .headlineMedium,
                 modifier = modifier

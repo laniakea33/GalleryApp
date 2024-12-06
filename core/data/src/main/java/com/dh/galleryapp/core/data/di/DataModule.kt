@@ -2,6 +2,7 @@ package com.dh.galleryapp.core.data.di
 
 import com.dh.galleryapp.core.data.repository.RepositoryImpl
 import com.dh.galleryapp.core.data.repository.mock.MockRepository
+import com.dh.galleryapp.core.domain.repository.Repository
 import com.dh.galleryapp.core.domain.repository.di.Mock
 import com.dh.galleryapp.core.domain.repository.di.Real
 import dagger.Binds
@@ -15,9 +16,9 @@ interface DataModule {
 
     @Binds
     @Real
-    fun bindsReal(impl: RepositoryImpl): com.dh.galleryapp.core.domain.repository.Repository
+    fun bindsReal(impl: RepositoryImpl): Repository
 
     @Binds
     @Mock
-    fun bindsMock(impl: MockRepository): com.dh.galleryapp.core.domain.repository.Repository
+    fun bindsMock(impl: MockRepository): Repository
 }

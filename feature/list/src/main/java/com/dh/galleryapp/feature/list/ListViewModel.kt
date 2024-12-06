@@ -6,13 +6,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.paging.cachedIn
 import androidx.paging.map
-import com.dh.galleryapp.core.bitmap.BitmapUtils
-import com.dh.galleryapp.core.bitmapcache.BitmapCacheObject
-import com.dh.galleryapp.core.cache.disk.DiskCache
-import com.dh.galleryapp.core.cache.memory.MemoryCache
 import com.dh.galleryapp.core.domain.GetImageListUseCase
-import com.dh.galleryapp.core.domain.repository.Repository
-import com.dh.galleryapp.core.domain.repository.di.Real
+import com.dh.galleryapp.core.domain.GetThumbnailImageUseCase
+import com.dh.galleryapp.core.domain.ThumbnailImageResult
 import com.dh.galleryapp.core.key.KeyGenerator
 import com.dh.galleryapp.feature.list.keystatusmap.KeyResultNotifier
 import com.dh.galleryapp.feature.list.mapper.toImageRequest
@@ -25,16 +21,12 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.yield
-import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
 class ListViewModel @Inject constructor(
     getImageListUseCase: GetImageListUseCase,
-    @Real private val repository: Repository,
-    private val memoryCache: MemoryCache,
-    private val diskCache: DiskCache,
+    private val getThumbnailImageUseCase: GetThumbnailImageUseCase,
 ) : ViewModel() {
 
     //  이미지 요청 데이터 목록
@@ -58,8 +50,7 @@ class ListViewModel @Inject constructor(
 
     private val mutex = Mutex()
 
-    fun requestImageSampling(url: String, width: Int, height: Int, index: Int) {
-        val originKey = KeyGenerator.key(url)
+    fun requestImageSampling(url: String, width: Int, height: Int) {
         val key = KeyGenerator.key(url, width, height)
 
         if (jobs[key]?.isActive == true) return
@@ -74,114 +65,34 @@ class ListViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO + ceh) {
             if (noNeedToLoad(key)) return@launch
 
-            updateImageResult(key, ImageResult.Loading)
+            getThumbnailImageUseCase(
+                url = url,
+                width = width,
+                height = height
+            ).collect { result ->
+                when (result) {
+                    ThumbnailImageResult.Loading -> {
+                        updateImageResult(key, ImageResult.Loading)
+                    }
 
-            if (memoryCache.isCached(key)) {
-                val bitmap = memoryCache.cachedImage(key)!!.data as Bitmap
-                updateImageResult(key, ImageResult.Success(bitmap))
-                memoryCache.lruCacheProcess(key, false)
-                diskCache.lruCacheProcess(key, false)
-                return@launch
-            }
+                    is ThumbnailImageResult.Success -> {
+                        updateImageResult(key, ImageResult.Success(result.data as Bitmap))
+                    }
 
-            val orgFilePath = "${diskCache.diskCacheDir}/$originKey"
-            val filePath = "${diskCache.diskCacheDir}/$key"
-
-            yield()
-
-            if (diskCache.isCached(key)) {
-                val bitmap = BitmapUtils.decode(filePath)!!
-                updateImageResult(key, ImageResult.Success(bitmap))
-
-                memoryCache.newCache(key, BitmapCacheObject(bitmap))
-                memoryCache.lruCacheProcess(key, true, bitmap.allocationByteCount.toLong())
-                diskCache.lruCacheProcess(key, false)
-
-            } else if (diskCache.isCached(originKey)) {
-                onImageDownloaded(orgFilePath, key, false, width, height)
-
-            } else {
-                val result = repository.downloadImage(url, orgFilePath)
-
-                if (result.isSuccess) {
-                    try {
-                        val orgFileName = result.getOrThrow()
-                        val fileSize = repository.fileLength(orgFileName)
-
-                        diskCache.lruCacheProcess(originKey, true, fileSize)
-
-                        yield()
-
-                        onImageDownloaded(orgFilePath, key, true, width, height)
-
-                    } catch (e: Exception) {
+                    is ThumbnailImageResult.Failure -> {
+                        val e = result.throwable
                         e.printStackTrace()
                         updateImageResult(
                             key,
                             ImageResult.Failure(e)
                         )
                     }
-
-                } else {
-                    result.exceptionOrNull().let {
-                        it ?: RuntimeException("알수없는 오류 발생")
-                    }.also {
-                        updateImageResult(
-                            key,
-                            ImageResult.Failure(it)
-                        )
-                    }
                 }
             }
+
         }.also {
             jobs[key] = it
         }
-    }
-
-    private suspend fun onImageDownloaded(
-        orgFilePath: String,
-        key: String,
-        isNewData: Boolean,
-        width: Int = -1,
-        height: Int = -1,
-    ) {
-        val sampling = width > 0 && height > 0
-
-        val bitmap = if (sampling)
-            BitmapUtils.decodeSample(orgFilePath, width, height)!!
-        else BitmapUtils.decode(orgFilePath)!!
-
-        yield()
-
-        updateImageResult(key, ImageResult.Success(bitmap))
-
-        memoryCache.newCache(key, BitmapCacheObject(bitmap))
-        memoryCache.lruCacheProcess(key, true, bitmap.allocationByteCount.toLong())
-
-        yield()
-
-        if (sampling) {
-            saveBitmapToDiskCache(key, bitmap)
-        }
-
-        if (isNewData) {
-            val filePath = "${diskCache.diskCacheDir}/$key"
-            val sampledFileSize = File(filePath).length()
-
-            diskCache.lruCacheProcess(key, true, sampledFileSize)
-        } else {
-            diskCache.lruCacheProcess(key, false)
-        }
-    }
-
-    private suspend fun saveBitmapToDiskCache(fileName: String, bitmap: Bitmap) {
-        diskCache.saveFileOutputStreamToDiskCache(
-            fileName,
-            onFileOutputStream = {
-                // Bitmap을 압축하여 파일에 저장 (JPEG 포맷, 압축 품질 100)
-                bitmap.compress(Bitmap.CompressFormat.JPEG, 100, it)
-            }
-        )
     }
 
     suspend fun observe(

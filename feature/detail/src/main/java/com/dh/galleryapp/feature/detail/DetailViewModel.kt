@@ -3,11 +3,8 @@ package com.dh.galleryapp.feature.detail
 import android.graphics.Bitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dh.galleryapp.core.bitmap.BitmapUtils
-import com.dh.galleryapp.core.cache.disk.DiskCache
-import com.dh.galleryapp.core.cache.memory.MemoryCache
-import com.dh.galleryapp.core.domain.repository.Repository
-import com.dh.galleryapp.core.domain.repository.di.Real
+import com.dh.galleryapp.core.domain.GetOriginalImageUseCase
+import com.dh.galleryapp.core.domain.OriginalImageResult
 import com.dh.galleryapp.core.key.KeyGenerator
 import com.dh.galleryapp.feature.model.ImageResult
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,15 +13,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.yield
-import java.io.File
 import javax.inject.Inject
 
 @HiltViewModel
 class DetailViewModel @Inject constructor(
-    @Real private val repository: Repository,
-    private val memoryCache: MemoryCache,
-    private val diskCache: DiskCache,
+    val getOriginalImageUseCase: GetOriginalImageUseCase,
 ) : ViewModel() {
 
     private val _imageResult = MutableStateFlow<ImageResult>(ImageResult.Unknown)
@@ -41,55 +34,20 @@ class DetailViewModel @Inject constructor(
         }
 
         viewModelScope.launch(Dispatchers.IO + ceh) {
-            _imageResult.value = ImageResult.Loading
-
-            if (memoryCache.isCached(thumbnailKey)) {
-                val bitmap = memoryCache.cachedImage(thumbnailKey)!!.data as Bitmap
-                _imageResult.value = ImageResult.Success(bitmap)
-            }
-
-            val filePath = "${diskCache.diskCacheDir}/$key"
-
-            yield()
-
-            if (diskCache.isCached(key)) {
-                val bitmap = BitmapUtils.decode(filePath)!!
-
-                _imageResult.value = ImageResult.Success(bitmap)
-
-                yield()
-
-                diskCache.lruCacheProcess(key, false)
-
-            } else {
-                val result = repository.downloadImage(url, filePath)
-
-                if (result.isSuccess) {
-                    try {
-                        val fileSize = repository.fileLength(filePath)
-
-                        yield()
-
-                        diskCache.lruCacheProcess(key, true, fileSize)
-
-                        val bitmap = BitmapUtils.decode(filePath)!!
-
-                        _imageResult.value = ImageResult.Success(bitmap)
-
-                        val sampledFileSize = File(filePath).length()
-
-                        diskCache.lruCacheProcess(key, true, sampledFileSize)
-
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        _imageResult.value = ImageResult.Failure(e)
+            getOriginalImageUseCase(thumbnailKey = thumbnailKey, url = url).collect { result ->
+                when (result) {
+                    OriginalImageResult.Loading -> {
+                        _imageResult.value = ImageResult.Loading
                     }
 
-                } else {
-                    result.exceptionOrNull().let {
-                        it ?: RuntimeException("알수없는 오류 발생")
-                    }.also {
-                        _imageResult.value = ImageResult.Failure(it)
+                    is OriginalImageResult.Success -> {
+                        _imageResult.value = ImageResult.Success(result.data as Bitmap)
+                    }
+
+                    is OriginalImageResult.Failure -> {
+                        val e = result.throwable
+                        e.printStackTrace()
+                        _imageResult.value = ImageResult.Failure(e)
                     }
                 }
             }

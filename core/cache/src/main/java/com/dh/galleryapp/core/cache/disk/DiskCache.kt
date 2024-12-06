@@ -1,8 +1,7 @@
 package com.dh.galleryapp.core.cache.disk
 
 import com.dh.galleryapp.core.cache.Cache
-import com.dh.galleryapp.core.domain.repository.Repository
-import com.dh.galleryapp.core.domain.repository.di.Real
+import com.dh.galleryapp.core.storage.StorageDataSource
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jetbrains.annotations.TestOnly
@@ -14,7 +13,7 @@ import javax.inject.Singleton
 
 @Singleton
 class DiskCache @Inject constructor(
-    @Real private val repository: Repository,
+    private val storageDataSource: StorageDataSource,
     @Named("diskCacheDir") val diskCacheDir: String,
     @Named("journalFileDir") val journalFileDir: String,
 ) : Cache {
@@ -33,15 +32,15 @@ class DiskCache @Inject constructor(
     val mutex = Mutex()
 
     init {
-        diskCacheSize = repository.fileSizeSum(diskCacheDir)
+        diskCacheSize = storageDataSource.fileSizeSum(diskCacheDir)
         loadJournalFile(diskCacheKeyList)
     }
 
     private fun loadJournalFile(into: MutableList<String>) {
-        repository.createFile(journalFilePath)
-        into.addAll(repository.readLines(journalFilePath))
+        storageDataSource.createFile(journalFilePath)
+        into.addAll(storageDataSource.readLines(journalFilePath))
 
-        val fileNames = repository.fileNames(diskCacheDir)
+        val fileNames = storageDataSource.fileNames(diskCacheDir)
 
         val fakeKey = into.filter { key ->
             fileNames.none { name ->
@@ -57,13 +56,13 @@ class DiskCache @Inject constructor(
             }
         }
 
-        repository.deleteFiles(fakeFileNames)
+        storageDataSource.deleteFiles(fakeFileNames)
     }
 
     override suspend fun isCached(key: String): Boolean {
         return mutex.withLock {
             val filePath = "$diskCacheDir/$key"
-            repository.fileExists(filePath)
+            storageDataSource.fileExists(filePath)
         }
     }
 
@@ -81,11 +80,11 @@ class DiskCache @Inject constructor(
                 diskCacheKeyList.remove(key)
             }
 
-            repository.removeStringFromFile(journalFilePath, key)
+            storageDataSource.removeStringFromFile(journalFilePath, key)
 
-            if (repository.fileExists("$diskCacheDir/$key")) {
+            if (storageDataSource.fileExists("$diskCacheDir/$key")) {
                 diskCacheKeyList.add(0, key)
-                repository.prependStringToFile(journalFilePath, key)
+                storageDataSource.prependStringToFile(journalFilePath, key)
             }
         }
     }
@@ -96,15 +95,15 @@ class DiskCache @Inject constructor(
         val targetFilePath = "$diskCacheDir/$targetKey"
 
 
-        if (repository.fileExists(targetFilePath)) {
-            val targetSize = repository.fileLength(targetFilePath)
-            repository.deleteFile(targetFilePath)
+        if (storageDataSource.fileExists(targetFilePath)) {
+            val targetSize = storageDataSource.fileLength(targetFilePath)
+            storageDataSource.deleteFile(targetFilePath)
             diskCacheSize -= targetSize
         }
 
         diskCacheKeyList.remove(targetKey)
 
-        repository.removeStringFromFile(journalFilePath, targetKey)
+        storageDataSource.removeStringFromFile(journalFilePath, targetKey)
     }
 
     suspend fun saveFileOutputStreamToDiskCache(
@@ -112,7 +111,7 @@ class DiskCache @Inject constructor(
         onFileOutputStream: (FileOutputStream) -> Unit,
     ) {
         mutex.withLock {
-            repository.writeFileOutputStreamToFile(
+            storageDataSource.writeFileOutputStreamToFile(
                 diskCacheDir,
                 fileName,
                 onFileOutputStream = onFileOutputStream
@@ -124,14 +123,14 @@ class DiskCache @Inject constructor(
     fun newCache(key: String) {
         if (!diskCacheKeyList.contains(key)) {
             diskCacheKeyList.add(0, key)
-            repository.prependStringToFile(journalFilePath, key)
-            repository.createFile("$diskCacheDir/$key")
+            storageDataSource.prependStringToFile(journalFilePath, key)
+            storageDataSource.createFile("$diskCacheDir/$key")
         }
     }
 
     @TestOnly
     fun getDiskCacheFileCount(): Int {
-        return repository.fileNames(diskCacheDir).size
+        return storageDataSource.fileNames(diskCacheDir).size
     }
 
     fun getDiskCacheKeyList(): List<String> {

@@ -1,5 +1,6 @@
 package com.dh.galleryapp.core.cache.memory
 
+import android.graphics.Bitmap
 import com.dh.galleryapp.core.cache.Cache
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -15,7 +16,7 @@ class MemoryCache @Inject constructor() : Cache {
         const val memoryCacheSizeMax: Long = 1024 * 1024 * 40 // 40mb
     }
 
-    private val memoryCacheMap = HashMap<String, MemoryCacheObject>()
+    private val memoryCacheMap = HashMap<String, Bitmap>()
     private val memoryCacheKeyList = LinkedList<String>()
     private var memoryCacheSize: Long = 0
 
@@ -27,7 +28,7 @@ class MemoryCache @Inject constructor() : Cache {
         }
     }
 
-    suspend fun cachedImage(key: String): MemoryCacheObject? {
+    suspend fun cachedItem(key: String): Bitmap? {
         return mutex.withLock { memoryCacheMap[key] }
     }
 
@@ -53,7 +54,7 @@ class MemoryCache @Inject constructor() : Cache {
         val targetKey = memoryCacheKeyList.lastOrNull() ?: return
 
         memoryCacheMap[targetKey]?.let {
-            val targetSize = it.size()
+            val targetSize = it.allocationByteCount
             memoryCacheSize -= targetSize
         }
 
@@ -61,7 +62,7 @@ class MemoryCache @Inject constructor() : Cache {
         memoryCacheKeyList.remove(targetKey)
     }
 
-    suspend fun newCache(key: String, t: MemoryCacheObject) {
+    suspend fun newCache(key: String, t: Bitmap) {
         mutex.withLock {
             if (!memoryCacheKeyList.contains(key)) {
                 memoryCacheKeyList.add(0, key)
@@ -71,7 +72,7 @@ class MemoryCache @Inject constructor() : Cache {
     }
 
     @TestOnly
-    fun getMemoryCacheMap(): HashMap<String, MemoryCacheObject> {
+    fun getMemoryCacheMap(): HashMap<String, Bitmap> {
         return memoryCacheMap
     }
 

@@ -1,9 +1,13 @@
 package com.dh.galleryapp.core.data.repository.mock
 
+import android.graphics.BitmapFactory
 import androidx.paging.PagingData
+import com.dh.galleryapp.core.domain.OriginalImageResult
+import com.dh.galleryapp.core.domain.ThumbnailImageResult
 import com.dh.galleryapp.core.model.Image
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.flow
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
@@ -47,6 +51,22 @@ class MockRepository @Inject constructor() : com.dh.galleryapp.core.domain.repos
 
     override fun loadImageList(): Flow<PagingData<Image>> {
         return MutableStateFlow(PagingData.from(dummyImages))
+    }
+
+    override suspend fun getSampledImage(
+        url: String,
+        width: Int,
+        height: Int,
+    ): Flow<ThumbnailImageResult> {
+        return flow {
+            emit(ThumbnailImageResult.Success(BitmapFactory.decodeByteArray(byteArrayOf(), 0, 0)))
+        }
+    }
+
+    override fun getOriginalImage(thumbnailKey: String, url: String): Flow<OriginalImageResult> {
+        return flow {
+            emit(OriginalImageResult.Success(BitmapFactory.decodeByteArray(byteArrayOf(), 0, 0)))
+        }
     }
 
     override suspend fun downloadImage(url: String, filePath: String): Result<String> {

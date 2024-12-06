@@ -42,4 +42,5 @@ dependencies {
     implementation(projects.core.ui)
     implementation(projects.feature.list)
     implementation(projects.feature.detail)
+    implementation(projects.core.data)
 }

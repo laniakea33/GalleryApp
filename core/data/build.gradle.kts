@@ -16,4 +16,7 @@ dependencies {
     implementation(projects.core.network)
     implementation(projects.core.storage)
     implementation(projects.core.domain)
+    implementation(projects.core.bitmap)
+    implementation(projects.core.cache)
+    implementation(projects.core.key)
 }
