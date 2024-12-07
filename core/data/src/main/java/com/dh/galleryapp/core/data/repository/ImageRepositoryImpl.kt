@@ -14,7 +14,7 @@ import com.dh.galleryapp.core.data.repository.paging.ImageRemoteMediator
 import com.dh.galleryapp.core.database.LocalDataSource
 import com.dh.galleryapp.core.domain.OriginalImageResult
 import com.dh.galleryapp.core.domain.ThumbnailImageResult
-import com.dh.galleryapp.core.domain.repository.Repository
+import com.dh.galleryapp.core.domain.repository.ImageRepository
 import com.dh.galleryapp.core.key.KeyGenerator
 import com.dh.galleryapp.core.model.Image
 import com.dh.galleryapp.core.network.NetworkDataSource
@@ -23,17 +23,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import java.io.File
-import java.io.FileOutputStream
 import javax.inject.Inject
 
-class RepositoryImpl @Inject constructor(
+class ImageRepositoryImpl @Inject constructor(
     private val memoryCache: MemoryCache,
     private val diskCache: DiskCache,
     private val networkDataSource: NetworkDataSource,
     private val localDataSource: LocalDataSource,
     private val imageRemoteMediator: ImageRemoteMediator,
     private val storageDataSource: StorageDataSource,
-) : Repository {
+) : ImageRepository {
     @OptIn(ExperimentalPagingApi::class)
     override fun loadImageList(): Flow<PagingData<Image>> {
         return Pager(
@@ -51,7 +50,7 @@ class RepositoryImpl @Inject constructor(
             }
     }
 
-    override suspend fun getSampledImage(
+    override fun getSampledImage(
         url: String,
         width: Int,
         height: Int,
@@ -103,7 +102,7 @@ class RepositoryImpl @Inject constructor(
                 if (result.isSuccess) {
                     try {
                         val orgFileName = result.getOrThrow()
-                        val fileSize = fileLength(orgFileName)
+                        val fileSize = storageDataSource.fileLength(orgFileName)
 
                         diskCache.lruCacheProcess(originKey, true, fileSize)
 
@@ -170,7 +169,7 @@ class RepositoryImpl @Inject constructor(
 
                         emit(OriginalImageResult.Success(bitmap))
 
-                        val fileSize = fileLength(filePath)
+                        val fileSize = storageDataSource.fileLength(filePath)
 
                         diskCache.lruCacheProcess(key, true, fileSize)
 
@@ -206,53 +205,5 @@ class RepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-
-    override fun createFile(filePath: String): File {
-        return storageDataSource.createFile(filePath)
-    }
-
-    override fun readLines(filePath: String): List<String> {
-        return storageDataSource.readLines(filePath)
-    }
-
-    override fun fileNames(dirPath: String): List<String> {
-        return storageDataSource.fileNames(dirPath)
-    }
-
-    override fun deleteFile(filePath: String): Boolean {
-        return storageDataSource.deleteFile(filePath)
-    }
-
-    override fun deleteFiles(filePathList: List<String>) {
-        return storageDataSource.deleteFiles(filePathList)
-    }
-
-    override fun prependStringToFile(filePath: String, s: String) {
-        return storageDataSource.prependStringToFile(filePath, s)
-    }
-
-    override fun removeStringFromFile(filePath: String, s: String) {
-        return storageDataSource.removeStringFromFile(filePath, s)
-    }
-
-    override fun fileExists(filePath: String): Boolean {
-        return storageDataSource.fileExists(filePath)
-    }
-
-    override fun fileLength(filePath: String): Long {
-        return storageDataSource.fileLength(filePath)
-    }
-
-    override fun fileSizeSum(dirPath: String): Long {
-        return storageDataSource.fileSizeSum(dirPath)
-    }
-
-    override fun writeFileOutputStreamToFile(
-        dirPath: String,
-        fileName: String,
-        onFileOutputStream: (FileOutputStream) -> Unit,
-    ) {
-        return storageDataSource.writeFileOutputStreamToFile(dirPath, fileName, onFileOutputStream)
     }
 }
