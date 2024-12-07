@@ -1,7 +1,7 @@
-package com.dh.galleryapp
+package com.dh.galleryapp.core.data
 
+import android.graphics.BitmapFactory
 import com.dh.galleryapp.core.cache.memory.MemoryCache
-import com.dh.galleryapp.core.cache.memory.MemoryCacheObject
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -25,7 +25,7 @@ class MemoryCacheTest {
                 launch(Dispatchers.Default) {
                     val key = i.toString()
                     val size = MemoryCache.memoryCacheSizeMax * 2
-                    memoryCache.newCache(key, TestMemoryCacheObject(size.toInt()))
+                    memoryCache.newCache(key, BitmapFactory.decodeByteArray(byteArrayOf(), 0, 0))
                     memoryCache.lruCacheProcess(key, true, size)
                 }
             }
@@ -43,20 +43,12 @@ class MemoryCacheTest {
                 launch(Dispatchers.Default) {
                     val key = i.toString()
                     val size = MemoryCache.memoryCacheSizeMax / 10 * 3
-                    memoryCache.newCache(key, TestMemoryCacheObject(size.toInt()))
+                    memoryCache.newCache(key, BitmapFactory.decodeByteArray(byteArrayOf(), 0, 0))
                     memoryCache.lruCacheProcess(key, true, size)
                 }
             }
         }
 
         assertEquals(memoryCache.getMemoryCacheMap().size, memoryCache.getMemoryCacheKeyList().size)
-    }
-}
-
-class TestMemoryCacheObject(
-    data: Int,
-) : MemoryCacheObject(data) {
-    override fun size(): Int {
-        return this.data as Int
     }
 }

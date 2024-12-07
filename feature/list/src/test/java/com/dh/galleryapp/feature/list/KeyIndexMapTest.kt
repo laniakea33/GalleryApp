@@ -1,4 +1,4 @@
-package com.dh.galleryapp
+package com.dh.galleryapp.feature.list
 
 import com.dh.galleryapp.feature.list.keystatusmap.KeyIndexMap
 import com.dh.galleryapp.feature.list.keystatusmap.UiIndex

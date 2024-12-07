@@ -1,8 +1,6 @@
-package com.dh.galleryapp
+package com.dh.galleryapp.core.data
 
 import com.dh.galleryapp.core.cache.disk.DiskCache
-import com.dh.galleryapp.core.data.repository.mock.MockRepository
-import com.dh.galleryapp.core.data.repository.mock.MockRepository.Companion.mockFileLength
 import junit.framework.TestCase.assertEquals
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -19,13 +17,13 @@ class DiskCacheTest {
 
     @Test
     fun 캐시추가_LRU_테스트() = runBlocking {
-        val diskCache = DiskCache(MockRepository(), "diskCacheDir", "journalFileDir")
+        val diskCache = DiskCache(MockStorageDataSource(), "diskCacheDir", "journalFileDir")
 
         coroutineScope {
             for (i in 0 until 100) {
                 launch(Dispatchers.Default) {
                     val key = i.toString()
-                    val size = mockFileLength
+                    val size = MockStorageDataSource.mockFileLength
                     diskCache.newCache(key)
                     diskCache.lruCacheProcess(key, true, size)
                 }
@@ -39,18 +37,18 @@ class DiskCacheTest {
     }
 
     @Test
-    fun MockRepositoryTest(): Unit = runBlocking {
-        val repository = MockRepository()
-        repository.prependStringToFile("journal", "aaa")
-        repository.prependStringToFile("journal", "bbb")
-        repository.prependStringToFile("journal", "ccc")
-        repository.readLines("journal").forEach {
+    fun MockImageRepositoryTest(): Unit = runBlocking {
+        val mockDataSource = MockStorageDataSource()
+        mockDataSource.prependStringToFile("journal", "aaa")
+        mockDataSource.prependStringToFile("journal", "bbb")
+        mockDataSource.prependStringToFile("journal", "ccc")
+        mockDataSource.readLines("journal").forEach {
             println(it)
         }
 
-        repository.removeStringFromFile("journal", "bbb")
+        mockDataSource.removeStringFromFile("journal", "bbb")
 
-        repository.readLines("journal").forEach {
+        mockDataSource.readLines("journal").forEach {
             println(it)
         }
 
