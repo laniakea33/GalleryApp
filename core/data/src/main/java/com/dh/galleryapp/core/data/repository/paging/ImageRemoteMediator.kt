@@ -4,12 +4,12 @@ import androidx.paging.ExperimentalPagingApi
 import androidx.paging.LoadType
 import androidx.paging.PagingState
 import androidx.paging.RemoteMediator
+import com.dh.galleryapp.core.data.repository.mapper.toDatabaseImageResponse
 import com.dh.galleryapp.core.data.repository.pageSize
 import com.dh.galleryapp.core.database.LocalDataSource
 import com.dh.galleryapp.core.database.data.ImageRemoteKey
 import com.dh.galleryapp.core.database.data.ImageResponse
 import com.dh.galleryapp.core.network.NetworkDataSource
-import com.dh.galleryapp.core.data.repository.mapper.toDatabaseImageResponse
 import javax.inject.Inject
 
 @OptIn(ExperimentalPagingApi::class)
@@ -48,7 +48,6 @@ class ImageRemoteMediator @Inject constructor(
             } else {
                 local.saveImagesAndRemoteKey(images.map { it.toDatabaseImageResponse() }, key)
             }
-
             MediatorResult.Success(endOfPaginationReached = endOfPaginationReached)
         } catch (e: Exception) {
             MediatorResult.Error(e)

@@ -14,6 +14,11 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -42,7 +47,11 @@ import androidx.paging.compose.collectAsLazyPagingItems
 import com.dh.galleryapp.core.ui.components.LoadingScreen
 import com.dh.galleryapp.core.ui.components.toPx
 import com.dh.galleryapp.feature.key.KeyGenerator
-import com.dh.galleryapp.feature.model.ImageResult.*
+import com.dh.galleryapp.feature.model.ImageResult.Failure
+import com.dh.galleryapp.feature.model.ImageResult.Loading
+import com.dh.galleryapp.feature.model.ImageResult.Success
+import com.dh.galleryapp.feature.model.ImageResult.Unknown
+import com.dh.galleryapp.feature.model.ImageResult.Waiting
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.runBlocking
 
@@ -63,43 +72,80 @@ fun ListScreen(
         }
     }
 
-    if (isLoading) {
-        LoadingScreen()
+    val isShowingRetry = rememberIsError(imageRequestList.loadState)
 
-    } else {
-        val configuration = LocalConfiguration.current
-        val itemSize = configuration.screenWidthDp.dp / columnCount
-        val width = itemSize.toPx().toInt()
-        val height = itemSize.toPx().toInt()
+    val snackbarHost = remember {
+        SnackbarHostState()
+    }
 
-        PreloadImageList(
-            imageRequestList = imageRequestList,
-            itemSize = itemSize,
-            imageResultList = imageResultList,
-            modifier = modifier,
-            onItemClick = onItemClick,
-            onObserve = { index, downloadUrl ->
-                runBlocking {
-                    viewModel.observe(index, downloadUrl, width, height)
-                }
-            },
-            onRequest = { index, downloadUrl ->
-                viewModel.requestImageSampling(
-                    downloadUrl,
-                    width, height,
-                )
-            },
-            onCancel = { index, downloadUrl ->
-                runBlocking {
-                    viewModel.dispose(
-                        index,
-                        KeyGenerator.key(downloadUrl, width, height)
+    LaunchedEffect(isShowingRetry) {
+        if (isShowingRetry) {
+            val result =
+                snackbarHost
+                    .showSnackbar(
+                        message = "오류가 발생했습니다.",
+                        actionLabel = "retry",
+                        duration = SnackbarDuration.Indefinite,
+                        withDismissAction = false,
                     )
-                }
+
+            if (result == SnackbarResult.ActionPerformed) {
+                imageRequestList.retry()
             }
-        )
+        }
+    }
+
+    Scaffold(
+        modifier = modifier,
+        snackbarHost = {
+            SnackbarHost(
+                hostState = snackbarHost,
+            )
+        },
+    ) {
+        if (isLoading) {
+            LoadingScreen(
+                modifier = Modifier.padding(it)
+            )
+
+        } else {
+            val configuration = LocalConfiguration.current
+            val itemSize = configuration.screenWidthDp.dp / columnCount
+            val width = itemSize.toPx().toInt()
+            val height = itemSize.toPx().toInt()
+
+            PreloadImageList(
+                imageRequestList = imageRequestList,
+                itemSize = itemSize,
+                imageResultList = imageResultList,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(it),
+                onItemClick = onItemClick,
+                onObserve = { index, downloadUrl ->
+                    runBlocking {
+                        viewModel.observe(index, downloadUrl, width, height)
+                    }
+                },
+                onRequest = { _, downloadUrl ->
+                    viewModel.requestImageSampling(
+                        downloadUrl,
+                        width, height,
+                    )
+                },
+                onCancel = { index, downloadUrl ->
+                    runBlocking {
+                        viewModel.dispose(
+                            index,
+                            KeyGenerator.key(downloadUrl, width, height)
+                        )
+                    }
+                }
+            )
+        }
     }
 }
+
 
 @Composable
 fun PreloadImageList(
